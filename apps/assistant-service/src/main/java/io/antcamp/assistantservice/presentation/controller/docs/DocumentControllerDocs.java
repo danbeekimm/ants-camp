@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Tag(name = "Assistant - Document", description = "RAG 문서 등록·조회·수정·삭제 (MANAGER 전용)")
+@Tag(name = "Assistant - Document", description = "RAG 문서 관리 (조회: PLAYER 이상, 생성·수정·삭제: MANAGER)")
 public interface DocumentControllerDocs {
 
     @Operation(summary = "문서 등록 (RAG 인덱싱)", description = "문서를 등록하고 벡터 DB에 인덱싱을 요청합니다. 처리는 비동기입니다.")
@@ -87,6 +87,8 @@ public interface DocumentControllerDocs {
     })
     @GetMapping("/{documentId}")
     ResponseEntity<CommonResponse<DocumentDetailResponse>> getDocument(
+            @Parameter(description = "X-Role", in = ParameterIn.HEADER, required = true)
+            @RequestHeader("X-Role") String role,
             @Parameter(description = "문서 UUID", required = true) @PathVariable UUID documentId);
 
     @Operation(summary = "문서 목록 조회", description = "키워드·타입·제목·커서 기반 필터링을 지원합니다.")
@@ -111,7 +113,7 @@ public interface DocumentControllerDocs {
                                         "hasNext": false
                                       }
                                     }"""))),
-            @ApiResponse(responseCode = "403", description = "MANAGER 권한 없음",
+            @ApiResponse(responseCode = "403", description = "PLAYER 이상 권한 없음",
                     content = @Content(mediaType = "application/json",
                             examples = @ExampleObject(name = "실패", value = """
                                     {"status":403,"code":"FORBIDDEN","message":"접근 권한이 없습니다.","data":null}""")))
