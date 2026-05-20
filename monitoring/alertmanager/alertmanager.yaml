@@ -27,7 +27,7 @@ receivers:
   # notification-service 웹훅 — AI 분석 후 Slack 발송 (기본 경로)
   - name: 'notification-webhook'
     webhook_configs:
-      - url: 'http://notification-service:8098/api/notifications/prometheus'
+      - url: 'http://10.178.0.2:8098/api/notifications/prometheus'
         http_config:
           authorization:
             credentials: '${WEBHOOK_SHARED_SECRET}'

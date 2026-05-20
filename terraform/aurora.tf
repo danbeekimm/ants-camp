@@ -9,27 +9,11 @@ resource "aws_security_group" "rds" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "PostgreSQL from domain-ec2"
+    description     = "PostgreSQL from app-ec2"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.domain.id]
-  }
-
-  ingress {
-    description     = "PostgreSQL from domain2-ec2"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.domain2.id]
-  }
-
-  ingress {
-    description     = "PostgreSQL from notification-ec2"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.notification.id]
+    security_groups = [aws_security_group.app.id]
   }
 
   egress {

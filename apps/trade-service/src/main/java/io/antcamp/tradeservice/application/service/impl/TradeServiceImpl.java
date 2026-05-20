@@ -144,10 +144,25 @@ public class TradeServiceImpl implements TradeService {
     public StockPriceList stockPriceList(StockList stockList, LocalDateTime dateTime) {
         Map<String, String> stockMap = new HashMap<>();
         for (String stockCode : stockList.stockList()) {
+            // Redis 우선 조회
             String price = redisTemplate.opsForValue().get(stockCode);
             if (price == null) {
-                price = String.valueOf(getMinutePrice(stockCode, dateTime));
-                redisTemplate.opsForValue().set(stockCode, price, Duration.ofSeconds(60));
+                try {
+                    // KIS API 호출 (rate limit 대비 딜레이)
+                    Thread.sleep(100);
+                    price = String.valueOf(getMinutePrice(stockCode, dateTime));
+                    redisTemplate.opsForValue().set(stockCode, price, Duration.ofSeconds(60));
+                } catch (RetryableException e) {
+                    // rate limit: Redis에 이전 값이 있으면 사용, 없으면 "0"
+                    log.warn("[stockPriceList] KIS rate limit - stockCode={}", stockCode);
+                    price = "0";
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    price = "0";
+                } catch (Exception e) {
+                    log.warn("[stockPriceList] KIS error - stockCode={}, error={}", stockCode, e.getMessage());
+                    price = "0";
+                }
             }
             stockMap.put(stockCode, price);
         }

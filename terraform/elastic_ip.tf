@@ -11,15 +11,6 @@ resource "aws_eip" "gateway" {
   tags = { Name = "${var.project_name}-eip-gateway" }
 }
 
-resource "aws_eip" "notification" {
-  domain   = "vpc"
-  instance = aws_instance.notification.id
-
-  depends_on = [aws_internet_gateway.main]
-
-  tags = { Name = "${var.project_name}-eip-notification" }
-}
-
 # ============================================================
 # Elastic IP - monitoring-ec2 (Grafana 외부 접근용)
 # ============================================================

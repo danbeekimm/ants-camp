@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    # localhost → RDS 엔드포인트로 오버라이드
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?currentSchema=${ASSISTANT_SCHEMA:assistant},public
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  cloud:
+    config:
+      enabled: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.1
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

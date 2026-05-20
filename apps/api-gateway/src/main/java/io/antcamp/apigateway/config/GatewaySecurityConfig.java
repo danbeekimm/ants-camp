@@ -54,7 +54,19 @@ public class GatewaySecurityConfig {
                                 "/api/public/**",
                                 "/api/users/register",
                                 "/api/notifications/prometheus",
-                                "/api/notifications/interactions"
+                                "/api/notifications/interactions",
+                                "/api/trades/stock-price-list",
+                                "/api/trades/realtime/**",
+                                "/api/stocks/realtime/**"
+                        ).permitAll()
+
+                        // 대회 목록/상세 조회는 비로그인도 허용
+                        .pathMatchers(HttpMethod.GET, "/api/competitions/**").permitAll()
+                        // 실시간 거래 상태 / 시장 상태 / 주식 정보 공개
+                        .pathMatchers(HttpMethod.GET,
+                                "/api/trades/realtime/status",
+                                "/api/market/status",
+                                "/api/stocks/**"
                         ).permitAll()
 
                         // 관리자 전용 API

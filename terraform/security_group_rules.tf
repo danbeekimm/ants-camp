@@ -18,31 +18,11 @@ resource "aws_security_group_rule" "kafka_ingress_from_infra" {
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "kafka_ingress_from_domain" {
+resource "aws_security_group_rule" "kafka_ingress_from_app" {
   type                     = "ingress"
-  description              = "Kafka broker from domain-ec2"
+  description              = "Kafka broker from app-ec2"
   security_group_id        = aws_security_group.kafka.id
-  source_security_group_id = aws_security_group.domain.id
-  from_port                = var.ports["kafka_broker"]
-  to_port                  = var.ports["kafka_broker"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "kafka_ingress_from_domain2" {
-  type                     = "ingress"
-  description              = "Kafka broker from domain2-ec2"
-  security_group_id        = aws_security_group.kafka.id
-  source_security_group_id = aws_security_group.domain2.id
-  from_port                = var.ports["kafka_broker"]
-  to_port                  = var.ports["kafka_broker"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "kafka_ingress_from_notification" {
-  type                     = "ingress"
-  description              = "Kafka broker from notification-ec2"
-  security_group_id        = aws_security_group.kafka.id
-  source_security_group_id = aws_security_group.notification.id
+  source_security_group_id = aws_security_group.app.id
   from_port                = var.ports["kafka_broker"]
   to_port                  = var.ports["kafka_broker"]
   protocol                 = "tcp"
@@ -72,63 +52,23 @@ resource "aws_security_group_rule" "kafka_ingress_node_exporter_from_monitoring"
 # INFRA (Config Server + Eureka + Kafka UI)
 # ──────────────────────────────────────────────────────────────
 
-# Config Server inbound from app EC2s
-resource "aws_security_group_rule" "infra_ingress_config_from_domain" {
+# Config Server inbound from app-ec2
+resource "aws_security_group_rule" "infra_ingress_config_from_app" {
   type                     = "ingress"
-  description              = "Config Server from domain-ec2"
+  description              = "Config Server from app-ec2"
   security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.domain.id
+  source_security_group_id = aws_security_group.app.id
   from_port                = var.ports["config_server"]
   to_port                  = var.ports["config_server"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "infra_ingress_config_from_domain2" {
+# Eureka inbound from app-ec2 + gateway
+resource "aws_security_group_rule" "infra_ingress_eureka_from_app" {
   type                     = "ingress"
-  description              = "Config Server from domain2-ec2"
+  description              = "Eureka from app-ec2"
   security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.domain2.id
-  from_port                = var.ports["config_server"]
-  to_port                  = var.ports["config_server"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "infra_ingress_config_from_notification" {
-  type                     = "ingress"
-  description              = "Config Server from notification-ec2"
-  security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.notification.id
-  from_port                = var.ports["config_server"]
-  to_port                  = var.ports["config_server"]
-  protocol                 = "tcp"
-}
-
-# Eureka inbound from app EC2s + gateway
-resource "aws_security_group_rule" "infra_ingress_eureka_from_domain" {
-  type                     = "ingress"
-  description              = "Eureka from domain-ec2"
-  security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.domain.id
-  from_port                = var.ports["eureka"]
-  to_port                  = var.ports["eureka"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "infra_ingress_eureka_from_domain2" {
-  type                     = "ingress"
-  description              = "Eureka from domain2-ec2"
-  security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.domain2.id
-  from_port                = var.ports["eureka"]
-  to_port                  = var.ports["eureka"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "infra_ingress_eureka_from_notification" {
-  type                     = "ingress"
-  description              = "Eureka from notification-ec2"
-  security_group_id        = aws_security_group.infra.id
-  source_security_group_id = aws_security_group.notification.id
+  source_security_group_id = aws_security_group.app.id
   from_port                = var.ports["eureka"]
   to_port                  = var.ports["eureka"]
   protocol                 = "tcp"
@@ -176,144 +116,108 @@ resource "aws_security_group_rule" "infra_ingress_node_exporter_from_monitoring"
 }
 
 # ──────────────────────────────────────────────────────────────
-# DOMAIN (user, asset, ranking)
+# APP (user, asset, ranking, trade, competition,
+#      notification, assistant)
 # ──────────────────────────────────────────────────────────────
 
-resource "aws_security_group_rule" "domain_ingress_user_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_user_from_gateway" {
   type                     = "ingress"
   description              = "user-service from gateway"
-  security_group_id        = aws_security_group.domain.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["user"]
   to_port                  = var.ports["user"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "domain_ingress_asset_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_asset_from_gateway" {
   type                     = "ingress"
   description              = "asset-service from gateway"
-  security_group_id        = aws_security_group.domain.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["asset"]
   to_port                  = var.ports["asset"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "domain_ingress_ranking_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_ranking_from_gateway" {
   type                     = "ingress"
   description              = "ranking-service from gateway"
-  security_group_id        = aws_security_group.domain.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["ranking"]
   to_port                  = var.ports["ranking"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "domain_ingress_ssh_from_gateway" {
-  type                     = "ingress"
-  description              = "SSH from bastion"
-  security_group_id        = aws_security_group.domain.id
-  source_security_group_id = aws_security_group.gateway.id
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "domain_ingress_node_exporter_from_monitoring" {
-  type                     = "ingress"
-  description              = "Node exporter from monitoring"
-  security_group_id        = aws_security_group.domain.id
-  source_security_group_id = aws_security_group.monitoring.id
-  from_port                = var.ports["node_exporter"]
-  to_port                  = var.ports["node_exporter"]
-  protocol                 = "tcp"
-}
-
-# ──────────────────────────────────────────────────────────────
-# DOMAIN2 (trade, competition)
-# ──────────────────────────────────────────────────────────────
-
-resource "aws_security_group_rule" "domain2_ingress_trade_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_trade_from_gateway" {
   type                     = "ingress"
   description              = "trade-service from gateway"
-  security_group_id        = aws_security_group.domain2.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["trade"]
   to_port                  = var.ports["trade"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "domain2_ingress_competition_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_competition_from_gateway" {
   type                     = "ingress"
   description              = "competition-service from gateway"
-  security_group_id        = aws_security_group.domain2.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["competition"]
   to_port                  = var.ports["competition"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "domain2_ingress_ssh_from_gateway" {
-  type                     = "ingress"
-  description              = "SSH from bastion"
-  security_group_id        = aws_security_group.domain2.id
-  source_security_group_id = aws_security_group.gateway.id
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "domain2_ingress_node_exporter_from_monitoring" {
-  type                     = "ingress"
-  description              = "Node exporter from monitoring"
-  security_group_id        = aws_security_group.domain2.id
-  source_security_group_id = aws_security_group.monitoring.id
-  from_port                = var.ports["node_exporter"]
-  to_port                  = var.ports["node_exporter"]
-  protocol                 = "tcp"
-}
-
-# ──────────────────────────────────────────────────────────────
-# NOTIFICATION
-# ──────────────────────────────────────────────────────────────
-
-resource "aws_security_group_rule" "notification_ingress_notification_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_notification_from_gateway" {
   type                     = "ingress"
   description              = "notification-service from gateway"
-  security_group_id        = aws_security_group.notification.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["notification"]
   to_port                  = var.ports["notification"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "notification_ingress_assistant_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_assistant_from_gateway" {
   type                     = "ingress"
   description              = "assistant-service from gateway"
-  security_group_id        = aws_security_group.notification.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = var.ports["assistant"]
   to_port                  = var.ports["assistant"]
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "notification_ingress_ssh_from_gateway" {
+resource "aws_security_group_rule" "app_ingress_ssh_from_gateway" {
   type                     = "ingress"
   description              = "SSH from bastion"
-  security_group_id        = aws_security_group.notification.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.gateway.id
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "notification_ingress_node_exporter_from_monitoring" {
+resource "aws_security_group_rule" "app_ingress_node_exporter_from_monitoring" {
   type                     = "ingress"
   description              = "Node exporter from monitoring"
-  security_group_id        = aws_security_group.notification.id
+  security_group_id        = aws_security_group.app.id
   source_security_group_id = aws_security_group.monitoring.id
   from_port                = var.ports["node_exporter"]
   to_port                  = var.ports["node_exporter"]
+  protocol                 = "tcp"
+}
+
+# Prometheus scrape from monitoring
+resource "aws_security_group_rule" "app_ingress_prometheus_from_monitoring" {
+  type                     = "ingress"
+  description              = "Prometheus scrape from monitoring"
+  security_group_id        = aws_security_group.app.id
+  source_security_group_id = aws_security_group.monitoring.id
+  from_port                = 8082
+  to_port                  = 8098
   protocol                 = "tcp"
 }
 
@@ -352,31 +256,11 @@ resource "aws_security_group_rule" "monitoring_ingress_loki_from_infra" {
   protocol                 = "tcp"
 }
 
-resource "aws_security_group_rule" "monitoring_ingress_loki_from_domain" {
+resource "aws_security_group_rule" "monitoring_ingress_loki_from_app" {
   type                     = "ingress"
-  description              = "Loki from domain-ec2 (Promtail)"
+  description              = "Loki from app-ec2 (Promtail)"
   security_group_id        = aws_security_group.monitoring.id
-  source_security_group_id = aws_security_group.domain.id
-  from_port                = var.ports["loki"]
-  to_port                  = var.ports["loki"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "monitoring_ingress_loki_from_domain2" {
-  type                     = "ingress"
-  description              = "Loki from domain2-ec2 (Promtail)"
-  security_group_id        = aws_security_group.monitoring.id
-  source_security_group_id = aws_security_group.domain2.id
-  from_port                = var.ports["loki"]
-  to_port                  = var.ports["loki"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "monitoring_ingress_loki_from_notification" {
-  type                     = "ingress"
-  description              = "Loki from notification-ec2 (Promtail)"
-  security_group_id        = aws_security_group.monitoring.id
-  source_security_group_id = aws_security_group.notification.id
+  source_security_group_id = aws_security_group.app.id
   from_port                = var.ports["loki"]
   to_port                  = var.ports["loki"]
   protocol                 = "tcp"
@@ -407,31 +291,11 @@ resource "aws_security_group_rule" "monitoring_ingress_loki_from_gateway" {
 # ──────────────────────────────────────────────────────────────
 
 # Redis
-resource "aws_security_group_rule" "db_ingress_redis_from_domain" {
+resource "aws_security_group_rule" "db_ingress_redis_from_app" {
   type                     = "ingress"
-  description              = "Redis from domain-ec2"
+  description              = "Redis from app-ec2"
   security_group_id        = aws_security_group.db.id
-  source_security_group_id = aws_security_group.domain.id
-  from_port                = var.ports["redis"]
-  to_port                  = var.ports["redis"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "db_ingress_redis_from_domain2" {
-  type                     = "ingress"
-  description              = "Redis from domain2-ec2"
-  security_group_id        = aws_security_group.db.id
-  source_security_group_id = aws_security_group.domain2.id
-  from_port                = var.ports["redis"]
-  to_port                  = var.ports["redis"]
-  protocol                 = "tcp"
-}
-
-resource "aws_security_group_rule" "db_ingress_redis_from_notification" {
-  type                     = "ingress"
-  description              = "Redis from notification-ec2"
-  security_group_id        = aws_security_group.db.id
-  source_security_group_id = aws_security_group.notification.id
+  source_security_group_id = aws_security_group.app.id
   from_port                = var.ports["redis"]
   to_port                  = var.ports["redis"]
   protocol                 = "tcp"

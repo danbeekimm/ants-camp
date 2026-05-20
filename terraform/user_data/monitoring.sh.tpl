@@ -31,9 +31,7 @@ scrape_configs:
       - targets:
           - ${kafka_ip}:${node_exporter_port}
           - ${infra_ip}:${node_exporter_port}
-          - ${domain_ip}:${node_exporter_port}
-          - ${domain2_ip}:${node_exporter_port}
-          - ${notification_ip}:${node_exporter_port}
+          - ${app_ip}:${node_exporter_port}
           - ${db_ip}:${node_exporter_port}
           - ${gateway_ip}:${node_exporter_port}
         labels:
@@ -55,44 +53,44 @@ scrape_configs:
   - job_name: spring-user
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${domain_ip}:${user_port}']
-        labels: { service: user-service, ec2: domain-ec2 }
+      - targets: ['${app_ip}:${user_port}']
+        labels: { service: user-service, ec2: app-ec2 }
 
   - job_name: spring-asset
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${domain_ip}:${asset_port}']
-        labels: { service: asset-service, ec2: domain-ec2 }
+      - targets: ['${app_ip}:${asset_port}']
+        labels: { service: asset-service, ec2: app-ec2 }
 
   - job_name: spring-ranking
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${domain_ip}:${ranking_port}']
-        labels: { service: ranking-service, ec2: domain-ec2 }
+      - targets: ['${app_ip}:${ranking_port}']
+        labels: { service: ranking-service, ec2: app-ec2 }
 
   - job_name: spring-trade
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${domain2_ip}:${trade_port}']
-        labels: { service: trade-service, ec2: domain2-ec2 }
+      - targets: ['${app_ip}:${trade_port}']
+        labels: { service: trade-service, ec2: app-ec2 }
 
   - job_name: spring-competition
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${domain2_ip}:${competition_port}']
-        labels: { service: competition-service, ec2: domain2-ec2 }
+      - targets: ['${app_ip}:${competition_port}']
+        labels: { service: competition-service, ec2: app-ec2 }
 
   - job_name: spring-notification
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${notification_ip}:${notification_port}']
-        labels: { service: notification-service, ec2: notification-ec2 }
+      - targets: ['${app_ip}:${notification_port}']
+        labels: { service: notification-service, ec2: app-ec2 }
 
   - job_name: spring-assistant
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['${notification_ip}:${assistant_port}']
-        labels: { service: assistant-service, ec2: notification-ec2 }
+      - targets: ['${app_ip}:${assistant_port}']
+        labels: { service: assistant-service, ec2: app-ec2 }
 EOF
 
 # ── Loki 설정 ─────────────────────────────────────────────────

@@ -94,27 +94,11 @@ resource "aws_security_group" "infra" {
   tags = { Name = "${var.project_name}-sg-infra" }
 }
 
-# ── domain-ec2 (user, asset, ranking) ─────────────────────
-resource "aws_security_group" "domain" {
-  name        = "${var.project_name}-sg-domain"
-  description = "domain-ec2: user(8081) asset(8082) ranking(1400)"
-  vpc_id      = aws_vpc.main.id
-
-  # 아웃바운드: infra + db + kafka + loki + S3
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = { Name = "${var.project_name}-sg-domain" }
-}
-
-# ── domain2-ec2 (trade, competition) ──────────────────────
-resource "aws_security_group" "domain2" {
-  name        = "${var.project_name}-sg-domain2"
-  description = "domain2-ec2: trade(1050) competition(1051)"
+# ── app-ec2 (user, asset, ranking, trade, competition,
+#             notification, assistant — t3.xlarge, private) ─
+resource "aws_security_group" "app" {
+  name        = "${var.project_name}-sg-app"
+  description = "app-ec2: all domain services (private)"
   vpc_id      = aws_vpc.main.id
 
   egress {
@@ -124,40 +108,7 @@ resource "aws_security_group" "domain2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.project_name}-sg-domain2" }
-}
-
-# ── notification-ec2 (notification, assistant) ─────────────
-resource "aws_security_group" "notification" {
-  name        = "${var.project_name}-sg-notification"
-  description = "notification-ec2: notification(1200) assistant(1201) - public HTTPS"
-  vpc_id      = aws_vpc.main.id
-
-  # HTTPS from internet (외부 webhook, push 수신)
-  ingress {
-    description = "HTTPS from internet"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP from internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = { Name = "${var.project_name}-sg-notification" }
+  tags = { Name = "${var.project_name}-sg-app" }
 }
 
 # ── monitoring-ec2 (prometheus, grafana, loki) ─────────────

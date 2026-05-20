@@ -1,0 +1,20 @@
+# Rate Limiting
+limit_req_zone $binary_remote_addr zone=api:10m rate=30r/s;
+
+# Upstream 정의
+upstream user_service        { server 10.0.2.146:8082; }
+upstream asset_service       { server 10.0.2.146:8086; }
+upstream ranking_service     { server 10.0.2.146:8094; }
+upstream trade_service       { server 10.0.2.33:8084; }
+upstream competition_service { server 10.0.2.33:8092; }
+upstream notification_svc    { server 10.0.1.87:8098; }
+upstream assistant_service   { server 10.0.1.87:8096; }
+upstream eureka_dashboard    { server 10.0.2.121:8761; }
+upstream kafka_ui_dashboard  { server <MONITORING_EC2_PRIVATE_IP>:8071; }
+
+# IP 직접 접근 차단
+server {
+    listen 80;
+    server_name _;
+    return 444;
+}

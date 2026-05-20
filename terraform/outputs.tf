@@ -7,11 +7,6 @@ output "gateway_public_ip" {
   value       = aws_eip.gateway.public_ip
 }
 
-output "notification_public_ip" {
-  description = "notification-ec2 퍼블릭 EIP (외부 webhook, push 수신용)"
-  value       = aws_eip.notification.public_ip
-}
-
 output "kafka_private_ip" {
   description = "kafka-ec2 프라이빗 IP"
   value       = aws_instance.kafka.private_ip
@@ -22,19 +17,9 @@ output "infra_private_ip" {
   value       = aws_instance.infra.private_ip
 }
 
-output "domain_private_ip" {
-  description = "domain-ec2 프라이빗 IP (user:8081, asset:8082, ranking:1400)"
-  value       = aws_instance.domain.private_ip
-}
-
-output "domain2_private_ip" {
-  description = "domain2-ec2 프라이빗 IP (trade:1050, competition:1051)"
-  value       = aws_instance.domain2.private_ip
-}
-
-output "notification_private_ip" {
-  description = "notification-ec2 프라이빗 IP (notification:1200, assistant:1201)"
-  value       = aws_instance.notification.private_ip
+output "app_private_ip" {
+  description = "app-ec2 프라이빗 IP (user:8082, asset:8086, ranking:8094, trade:8084, competition:8092, notification:8098, assistant:8096)"
+  value       = aws_instance.app.private_ip
 }
 
 output "monitoring_private_ip" {

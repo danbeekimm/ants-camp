@@ -277,3 +277,13 @@ variable "hikari_max_pool_size" {
   type        = number
   default     = 3
 }
+
+# ============================================================
+# GCP
+# ============================================================
+
+variable "gcp_project_id" {
+    description = "GCP 프로젝트 ID (Terraform이 직접 생성)"
+    type        = string
+    default     = "antcamp"
+}

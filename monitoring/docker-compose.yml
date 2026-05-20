@@ -1,0 +1,11 @@
+services:
+  kafka-ui:
+    image: ${ECR_REGISTRY}/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8071:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: antcamp
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_EXTERNAL_HOST}:9094
+      DYNAMIC_CONFIG_ENABLED: "true"
+    restart: unless-stopped

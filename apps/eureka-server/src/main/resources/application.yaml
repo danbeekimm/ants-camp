@@ -4,3 +4,13 @@ spring:
 
   config:
     import: optional:configserver:${CONFIG_SERVER_URL}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true

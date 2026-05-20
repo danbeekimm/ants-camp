@@ -16,13 +16,13 @@ cat > /etc/nginx/sites-available/ants-camp <<NGINX_EOF
 limit_req_zone \$binary_remote_addr zone=api:10m rate=30r/s;
 
 # Upstream 정의
-upstream user_service        { server ${domain_ip}:${user_port}; }
-upstream asset_service       { server ${domain_ip}:${asset_port}; }
-upstream ranking_service     { server ${domain_ip}:${ranking_port}; }
-upstream trade_service       { server ${domain2_ip}:${trade_port}; }
-upstream competition_service { server ${domain2_ip}:${competition_port}; }
-upstream notification_svc    { server ${notification_ip}:${notification_port}; }
-upstream assistant_service   { server ${notification_ip}:${assistant_port}; }
+upstream user_service        { server ${app_ip}:${user_port}; }
+upstream asset_service       { server ${app_ip}:${asset_port}; }
+upstream ranking_service     { server ${app_ip}:${ranking_port}; }
+upstream trade_service       { server ${app_ip}:${trade_port}; }
+upstream competition_service { server ${app_ip}:${competition_port}; }
+upstream notification_svc    { server ${app_ip}:${notification_port}; }
+upstream assistant_service   { server ${app_ip}:${assistant_port}; }
 upstream eureka_dashboard    { server ${infra_ip}:${eureka_port}; }
 upstream kafka_ui_dashboard  { server ${infra_ip}:${kafka_ui_port}; }
 
