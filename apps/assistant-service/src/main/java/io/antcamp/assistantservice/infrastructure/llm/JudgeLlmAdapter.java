@@ -33,32 +33,39 @@ public class JudgeLlmAdapter implements JudgeLlmPort {
     // Reference-free: 정답 없이 컨텍스트 기반으로만 채점
     private static final String JUDGE_FREE_PROMPT = """
             당신은 RAG(Retrieval-Augmented Generation) 품질 평가 전문가입니다.
-            아래 기준으로 AI 어시스턴트의 응답을 1.0 ~ 5.0 점 척도로 평가하세요.
+            아래 기준으로 AI 어시스턴트의 응답을 1~5점 정수 척도로 평가하세요.
 
             - relevance(관련성): 응답이 질문의 의도에 정확히 부합하는가?
-            - faithfulness(충실도): 응답이 제공된 컨텍스트에만 근거하는가? (환각 방지)
-              컨텍스트에 없는 내용이 포함되어 있으면 3.0 미만으로 평가.
+            - faithfulness(충실도): 응답이 제공된 컨텍스트에 근거하는가? (환각 방지)
+              · 컨텍스트와 모순되는 내용 → 3점 미만 (환각)
+              · 컨텍스트에 없는 사실·수치·종목명을 지어냄 → 3점 미만 (환각)
+              · 컨텍스트에 없지만 일반 상식 수준의 보충 설명 → 감점하지 않거나 약하게만 감점
             - contextPrecision(맥락 정확도): 검색된 컨텍스트가 응답에 유용하게 활용되었는가?
 
-            점수 가이드: 5.0=완벽  4.0=양호  3.0=보통  2.0=불량  1.0=완전히 틀림
+            점수 가이드: 5=완벽  4=양호  3=보통  2=불량  1=완전히 틀림
 
-            마크다운 없이 아래 JSON만 반환하세요:
-            {"relevance":<1.0-5.0>,"faithfulness":<1.0-5.0>,"contextPrecision":<1.0-5.0>,"feedback":"<간략한 한국어 코멘트>"}
+            먼저 feedback에 채점 근거를 한두 문장으로 서술한 뒤, 그 근거에 맞춰 점수를 매기세요.
+            마크다운 없이 아래 JSON만 키 순서 그대로 반환하세요:
+            {"feedback":"<채점 근거 한두 문장, 한국어>","relevance":<1-5>,"faithfulness":<1-5>,"contextPrecision":<1-5>}
             """;
 
     // Reference-based: 정답과 비교하여 일치도 포함 채점
     private static final String JUDGE_REF_PROMPT = """
             당신은 RAG(Retrieval-Augmented Generation) 품질 평가 전문가입니다.
-            제공된 정답을 기준으로 AI 어시스턴트의 응답을 1.0 ~ 5.0 점 척도로 평가하세요.
+            제공된 정답을 기준으로 AI 어시스턴트의 응답을 1~5점 정수 척도로 평가하세요.
 
             - relevance(관련성): 응답이 질문의 의도에 정확히 부합하는가?
-            - faithfulness(충실도): 응답이 정답 및 컨텍스트에 근거하는가? (정답과 상충하면 3.0 미만)
+            - faithfulness(충실도): 응답이 정답 및 컨텍스트에 근거하는가?
+              · 정답·컨텍스트와 모순되는 내용 → 3점 미만
+              · 정답·컨텍스트에 없는 사실·수치·종목명을 지어냄 → 3점 미만
+              · 일반 상식 수준의 보충 설명 → 감점하지 않거나 약하게만 감점
             - contextPrecision(맥락 정확도): 검색된 컨텍스트가 응답에 유용하게 활용되었는가?
 
-            점수 가이드: 5.0=완벽  4.0=양호  3.0=보통  2.0=불량  1.0=완전히 틀림
+            점수 가이드: 5=완벽  4=양호  3=보통  2=불량  1=완전히 틀림
 
-            마크다운 없이 아래 JSON만 반환하세요:
-            {"relevance":<1.0-5.0>,"faithfulness":<1.0-5.0>,"contextPrecision":<1.0-5.0>,"feedback":"<간략한 한국어 코멘트>"}
+            먼저 feedback에 채점 근거를 한두 문장으로 서술한 뒤, 그 근거에 맞춰 점수를 매기세요.
+            마크다운 없이 아래 JSON만 키 순서 그대로 반환하세요:
+            {"feedback":"<채점 근거 한두 문장, 한국어>","relevance":<1-5>,"faithfulness":<1-5>,"contextPrecision":<1-5>}
             """;
 
     // Pairwise: 두 응답을 비교하여 어느 쪽이 더 나은지 판정
