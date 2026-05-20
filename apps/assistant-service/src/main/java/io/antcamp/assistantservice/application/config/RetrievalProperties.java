@@ -17,8 +17,10 @@ public record RetrievalProperties(
         // 후보 풀 배수 — 리랭킹/컷오프 여지를 주기 위해 topK * 배수 만큼 먼저 검색한다
         @DefaultValue("3") int candidateMultiplier,
         // 코사인 유사도 하한(0.0~1.0). 이 값 미만 청크는 벡터 검색 단계에서 제외해 명백한 노이즈를 컷한다.
-        // Spring AI 기본은 0.0(=컷 없음). 한국어 임베딩 기준 0.5~0.75 사이가 출발점이며 실측 후 조정.
-        @DefaultValue("0.5") double similarityThreshold,
+        // Spring AI 기본은 0.0(=컷 없음). 로컬 실측(text-embedding) 결과 정상 매칭은 0.36~0.63,
+        // 무관 질문 노이즈는 0.14~0.26에 분포 → 그 사이인 0.30을 기본값으로 둔다.
+        // 0.5는 "대회 신청 방법(0.50)", "주식 매수 방법(0.36)" 같은 정상 문서까지 컷해 과도한 거절을 유발했다.
+        @DefaultValue("0.3") double similarityThreshold,
         // 1위 점수 대비 비율 컷오프. 1위의 (scoreGapRatio)배 미만인 청크는 제외한다. 1.0이면 비활성.
         @DefaultValue("0.8") double scoreGapRatio,
         // 질문 의도와 일치하는 문서 타입에 부여하는 가산점(코사인 점수에 직접 더함)
