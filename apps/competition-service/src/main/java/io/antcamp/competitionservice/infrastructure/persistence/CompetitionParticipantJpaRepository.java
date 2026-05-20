@@ -20,4 +20,12 @@ public interface CompetitionParticipantJpaRepository extends JpaRepository<Compe
     );
 
     List<CompetitionParticipantEntity> findAllByCompetitionId(UUID competitionId);
+
+    // @SQLRestriction 무시하고 소프트 딜리트 포함 조회 (nativeQuery)
+    @Query(value = "SELECT * FROM p_competition_participant WHERE user_id = :userId AND competition_id = :competitionId LIMIT 1",
+           nativeQuery = true)
+    Optional<CompetitionParticipantEntity> findByUserIdAndCompetitionIdIncludingDeleted(
+            @Param("userId") UUID userId,
+            @Param("competitionId") UUID competitionId
+    );
 }

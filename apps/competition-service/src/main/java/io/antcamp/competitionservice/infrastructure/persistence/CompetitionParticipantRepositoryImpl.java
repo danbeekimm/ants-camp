@@ -33,6 +33,22 @@ public class CompetitionParticipantRepositoryImpl implements CompetitionParticip
                 .map(CompetitionParticipantEntity::toDomain);
     }
 
+    @Override
+    public Optional<CompetitionParticipant> findByUserIdAndCompetitionIdIncludingDeleted(UUID userId, UUID competitionId) {
+        return competitionParticipantJpaRepository
+                .findByUserIdAndCompetitionIdIncludingDeleted(userId, competitionId)
+                .map(CompetitionParticipantEntity::toDomain);
+    }
+
+    @Override
+    public CompetitionParticipant reactivate(UUID userId, UUID competitionId) {
+        CompetitionParticipantEntity entity = competitionParticipantJpaRepository
+                .findByUserIdAndCompetitionIdIncludingDeleted(userId, competitionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMPETITION_PARTICIPANT_NOT_FOUND));
+        entity.reactivate();
+        return competitionParticipantJpaRepository.save(entity).toDomain();
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     @Override

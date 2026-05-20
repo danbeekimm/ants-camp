@@ -37,22 +37,33 @@ public class CompetitionParticipantServiceImpl implements CompetitionParticipant
             throw new BusinessException(ErrorCode.COMPETITION_CANNOT_REGISTER);
         }
 
-        // 2. 락 획득 후 중복 신청 체크 (이 시점엔 앞선 트랜잭션이 이미 commit된 상태)
-        competitionParticipantRepository.findByUserIdAndCompetitionId(command.userId(), command.competitionId())
-                .ifPresent(p -> {
-                    throw new BusinessException(ErrorCode.COMPETITION_ALREADY_REGISTERED);
-                });
+        // 2. 중복 신청 체크 — 소프트 딜리트 포함 전체 row 조회
+        //    활성 row: 이미 신청 → COMPETITION_ALREADY_REGISTERED
+        //    소프트 딜리트 row: 이전에 취소했다가 재신청 → 재활성화
+        //    없음: 신규 삽입
+        var existingOpt = competitionParticipantRepository
+                .findByUserIdAndCompetitionIdIncludingDeleted(command.userId(), command.competitionId());
 
         competition.register();
         competitionRepository.save(competition);
 
-        // 3. 대회 참여자 저장
-        CompetitionParticipant participant = CompetitionParticipant.create(
-                command.userId(),
-                command.username(),
-                command.competitionId()
-        );
-        CompetitionParticipant saved = competitionParticipantRepository.save(participant);
+        // 3. 참여자 저장 (신규 or 재활성화)
+        CompetitionParticipant saved;
+        if (existingOpt.isPresent()) {
+            // 활성 row → 중복
+            if (!existingOpt.get().isDeleted()) {
+                throw new BusinessException(ErrorCode.COMPETITION_ALREADY_REGISTERED);
+            }
+            // 소프트 딜리트 row → 재활성화
+            saved = competitionParticipantRepository.reactivate(command.userId(), command.competitionId());
+        } else {
+            CompetitionParticipant participant = CompetitionParticipant.create(
+                    command.userId(),
+                    command.username(),
+                    command.competitionId()
+            );
+            saved = competitionParticipantRepository.save(participant);
+        }
 
         // 4. Spring 내부 이벤트 발행 → DB 커밋 완료 후 리스너가 Kafka로 전달
         applicationEventPublisher.publishEvent(new CompetitionRegisteredEvent(

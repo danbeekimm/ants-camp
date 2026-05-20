@@ -74,7 +74,8 @@ public class CompetitionParticipantEntity extends BaseEntity implements Persista
                 participantId,
                 userId,
                 username,
-                competitionId
+                competitionId,
+                isDeleted()
         );
     }
 

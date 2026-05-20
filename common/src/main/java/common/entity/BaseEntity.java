@@ -59,4 +59,9 @@ public abstract class BaseEntity {
         return this.deletedAt != null;
     }
 
+    public void reactivate() {
+        this.deletedAt = null;
+        this.deletedBy = null;
+    }
+
 }
