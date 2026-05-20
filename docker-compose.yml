@@ -317,6 +317,7 @@ services:
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ASSISTANT_LLM_MODEL_NAME: ${ANTHROPIC_CHAT_MODEL}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
       ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
       CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
@@ -351,8 +352,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
       PROMETHEUS_URL: http://prometheus:${PROMETHEUS_PORT}
-      #todo : GRAFANA_URL 배포 전 변경예정
-      GRAFANA_URL: http://localhost:${GRAFANA_PORT}
+      GRAFANA_URL: https://monitoring.antcamp.site
       LOKI_URL: http://loki:${LOKI_PORT}
       REDIS_HOST: redis
       REDIS_PORT: ${SPRING_DATA_REDIS_PORT}
