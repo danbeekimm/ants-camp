@@ -41,9 +41,13 @@ public class SpringAiVectorStoreAdapter implements VectorStorePort {
     // OpenAI 임베딩 호출 포함
     @IngestRetryPolicy.Retry
     @Override
-    public List<SearchedChunk> search(String query, int topK) {
+    public List<SearchedChunk> search(String query, int topK, double similarityThreshold) {
         List<Document> results = vectorStore.similaritySearch(
-                SearchRequest.builder().query(query).topK(topK).build()
+                SearchRequest.builder()
+                        .query(query)
+                        .topK(topK)
+                        .similarityThreshold(similarityThreshold)
+                        .build()
         );
         if (results == null || results.isEmpty()) return List.of();
 
