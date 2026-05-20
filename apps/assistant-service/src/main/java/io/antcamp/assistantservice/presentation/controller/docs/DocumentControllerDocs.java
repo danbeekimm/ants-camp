@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Tag(name = "Assistant - Document", description = "RAG 문서 등록·조회·수정·삭제 (MANAGER 전용)")
+@Tag(name = "Assistant - Document", description = "RAG 문서 관리 (조회: PLAYER 이상, 생성·수정·삭제: MANAGER)")
 public interface DocumentControllerDocs {
 
     @Operation(summary = "문서 등록 (RAG 인덱싱)", description = "문서를 등록하고 벡터 DB에 인덱싱을 요청합니다. 처리는 비동기입니다.")
@@ -36,8 +36,7 @@ public interface DocumentControllerDocs {
                                       "data": {
                                         "documentId": "doc-uuid-...",
                                         "title": "삼성전자 2026 사업전망",
-                                        "type": "STOCK_ANALYSIS",
-                                        "status": "PROCESSING"
+                                        "type": "STOCK_ANALYSIS"
                                       }
                                     }"""))),
             @ApiResponse(responseCode = "400", description = "제목 또는 내용 유효성 실패",
@@ -70,7 +69,9 @@ public interface DocumentControllerDocs {
                                         "title": "삼성전자 2026 사업전망",
                                         "type": "STOCK_ANALYSIS",
                                         "content": "삼성전자는 2026년 반도체 부문에서...",
-                                        "status": "INDEXED",
+                                        "chunkCount": 3,
+                                        "ingestStatus": "COMPLETED",
+                                        "failureReason": null,
                                         "createdAt": "2026-05-10T10:00:00"
                                       }
                                     }"""))),
@@ -105,14 +106,14 @@ public interface DocumentControllerDocs {
                                             "documentId": "doc-uuid-...",
                                             "title": "삼성전자 2026 사업전망",
                                             "type": "STOCK_ANALYSIS",
-                                            "status": "INDEXED",
-                                            "updatedAt": "2026-05-10T10:00:00"
+                                            "updatedAt": "2026-05-10T10:00:00",
+                                            "ingestStatus": "COMPLETED"
                                           }
                                         ],
                                         "hasNext": false
                                       }
                                     }"""))),
-            @ApiResponse(responseCode = "403", description = "MANAGER 권한 없음",
+            @ApiResponse(responseCode = "403", description = "PLAYER 이상 권한 없음",
                     content = @Content(mediaType = "application/json",
                             examples = @ExampleObject(name = "실패", value = """
                                     {"status":403,"code":"FORBIDDEN","message":"접근 권한이 없습니다.","data":null}""")))
@@ -140,7 +141,7 @@ public interface DocumentControllerDocs {
                                       "data": {
                                         "documentId": "doc-uuid-...",
                                         "title": "삼성전자 2026 사업전망 (수정)",
-                                        "status": "PROCESSING"
+                                        "type": "STOCK_ANALYSIS"
                                       }
                                     }"""))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 문서",

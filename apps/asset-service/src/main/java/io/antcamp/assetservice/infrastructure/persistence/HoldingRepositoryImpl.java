@@ -1,6 +1,7 @@
 package io.antcamp.assetservice.infrastructure.persistence;
 
-import io.antcamp.assetservice.domain.exception.HoldingNotFoundException;
+import common.exception.BusinessException;
+import common.exception.ErrorCode;
 import io.antcamp.assetservice.domain.model.Holding;
 import io.antcamp.assetservice.domain.repository.HoldingRepository;
 import io.antcamp.assetservice.infrastructure.entity.HoldingEntity;
@@ -44,12 +45,12 @@ public class HoldingRepositoryImpl implements HoldingRepository {
 
     @Override
     public void delete(Holding holding) {
-        // 수정 전: softDelete("SYSTEM") + save  ← deleted_at NULL row 가 DB 에 잔존했고,
+        // 수정 전: softDelete("SYSTEM") + save  ← deleted_at 만 채워두고 row 가 DB 에 잔존했고,
         // uk_holdings_account_stock 유니크 제약은 deleted_at 을 고려하지 않아
-        // 같은 (account_id, stock_code) 로 재매수 시 PostgreSQL 23505 발생.
+        // 같은 (account_id, stock_code) 로 재매수 시 PostgreSQL 23505 (duplicate key) 발생.
         // Holding 은 "현재 보유 상태" 이므로 hard delete 가 적절. 매매 audit 은 p_trade 에 존재.
         HoldingEntity entity = jpaHoldingRepository.findById(holding.getHoldingId())
-                .orElseThrow(() -> new HoldingNotFoundException("보유 주식을 찾을 수 없습니다."));
-        jpaHoldingRepository.delete(entity);
+                .orElseThrow(() -> new BusinessException(ErrorCode.HOLDING_NOT_FOUND));
+        jpaHoldingRepository.delete(entity); // ✅ hard delete — 행을 실제로 제거
     }
 }

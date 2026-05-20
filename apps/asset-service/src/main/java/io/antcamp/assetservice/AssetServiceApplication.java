@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @EnableDiscoveryClient
 @EnableFeignClients
-@SpringBootApplication
+c
 public class AssetServiceApplication {
 
     public static void main(String[] args) {

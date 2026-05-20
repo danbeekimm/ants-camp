@@ -51,6 +51,7 @@ ExecStart=/usr/bin/docker run --name notification-service \\
   -v /opt/services/notification-service.jar:/app/app.jar \\
   -v /opt/logs:/opt/logs \\
   -e JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport" \\
+  -e GRAFANA_URL="https://monitoring.antcamp.site" \\
   ${docker_image} \\
   java \\
     -Xmx${heap_notification} -Xms128m \\
