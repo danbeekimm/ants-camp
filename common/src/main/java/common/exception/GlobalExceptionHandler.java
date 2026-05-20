@@ -2,6 +2,7 @@ package common.exception;
 
 import common.dto.CommonResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -42,6 +43,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<CommonResponse<?>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("[HttpMessageNotReadableException] message={}", e.getMessage());
         return CommonResponse.error(ErrorCode.INVALID_INPUT);
+    }
+
+    // DB unique constraint 위반 — commit 시점에 발생하므로 서비스 try-catch로 잡히지 않음
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<CommonResponse<?>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "";
+        // 대회 참가자 중복 constraint
+        if (msg.contains("uq_competition_participant_user_competition")) {
+            log.warn("[DataIntegrityViolation] 대회 중복 참가 시도: {}", e.getMessage());
+            return CommonResponse.error(ErrorCode.COMPETITION_ALREADY_REGISTERED);
+        }
+        log.error("[DataIntegrityViolation] {}", e.getMessage());
+        return CommonResponse.error(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 
     // 나머지 예상 못한 예외상황
