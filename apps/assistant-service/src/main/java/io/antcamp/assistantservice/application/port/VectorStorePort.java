@@ -9,7 +9,10 @@ public interface VectorStorePort {
 
     void store(List<ChunkToStore> chunks);
 
-    List<SearchedChunk> search(String query, int topK);
+    /**
+     * @param similarityThreshold 코사인 유사도 하한(0.0~1.0). 이 값 미만 청크는 제외한다. 0.0이면 컷 없음.
+     */
+    List<SearchedChunk> search(String query, int topK, double similarityThreshold);
 
     /** 문서 ID 기준으로 벡터 스토어에서 모든 청크 삭제 — 재인제스트 멱등성 보장 */
     void deleteByDocumentId(UUID documentId);
