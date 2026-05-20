@@ -1,5 +1,6 @@
 package io.antcamp.assistantservice.application.service;
 
+import io.antcamp.assistantservice.application.config.RetrievalProperties;
 import io.antcamp.assistantservice.application.dto.command.SendMessageCommand;
 import io.antcamp.assistantservice.application.dto.result.SendMessageResult;
 import io.antcamp.assistantservice.application.port.ChatPort;
@@ -34,8 +35,9 @@ public class RagApplicationService {
     private final LlmPort llmPort;
     private final ResponseCachePort responseCachePort;
     private final EvalRagPort evalRagPort;
+    private final RetrievalProperties retrievalProperties;
+    private final RetrievalReranker retrievalReranker;
 
-    private static final int TOP_K = 5;
     private static final String ERROR_RESPONSE = "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
     private static final String SYSTEM_PROMPT_TEMPLATE = """
             본 서비스는 가상 머니를 기반으로 사용자가 실제 주식 데이터를 참고하여 투자 대회에 참가하고,
@@ -138,7 +140,9 @@ public class RagApplicationService {
     public EvalRagResult runRagForEval(String question, String promptTemplate, String ragModel) {
         List<VectorStorePort.SearchedChunk> searchedChunks;
         try {
-            searchedChunks = vectorStorePort.search(question, TOP_K);
+            List<VectorStorePort.SearchedChunk> candidates = vectorStorePort.search(
+                    question, retrievalProperties.candidateTopK(), retrievalProperties.similarityThreshold());
+            searchedChunks = retrievalReranker.rerank(question, candidates);
         } catch (Exception e) {
             log.warn("평가용 벡터 검색 실패, 빈 컨텍스트로 진행: question={}", question, e);
             searchedChunks = List.of();
@@ -154,7 +158,7 @@ public class RagApplicationService {
             log.warn("평가용 LLM 호출 실패: question={}, ragModel={}", question, ragModel, e);
             int elapsed = (int) (System.currentTimeMillis() - start);
             return new EvalRagResult(question, buildRetrievedChunks(searchedChunks), systemPrompt,
-                    ragModel, "[LLM 오류] " + e.getMessage(), elapsed, 0, 0, contextText, TOP_K);
+                    ragModel, "[LLM 오류] " + e.getMessage(), elapsed, 0, 0, contextText, retrievalProperties.topK());
         }
         int latencyMs = (int) (System.currentTimeMillis() - start);
         return new EvalRagResult(
@@ -167,7 +171,7 @@ public class RagApplicationService {
                 llmResult.promptTokens(),
                 llmResult.completionTokens(),
                 contextText,
-                TOP_K
+                retrievalProperties.topK()
         );
     }
 
@@ -201,7 +205,9 @@ public class RagApplicationService {
 
         List<VectorStorePort.SearchedChunk> searchedChunks;
         try {
-            searchedChunks = vectorStorePort.search(userMessage.getContent(), TOP_K);
+            List<VectorStorePort.SearchedChunk> candidates = vectorStorePort.search(
+                    userMessage.getContent(), retrievalProperties.candidateTopK(), retrievalProperties.similarityThreshold());
+            searchedChunks = retrievalReranker.rerank(userMessage.getContent(), candidates);
         } catch (Exception e) {
             log.warn("벡터 검색 실패, 빈 컨텍스트로 진행: sessionId={}", chatSessionId, e);
             searchedChunks = List.of();
