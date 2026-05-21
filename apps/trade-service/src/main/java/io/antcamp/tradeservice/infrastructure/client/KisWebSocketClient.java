@@ -39,6 +39,13 @@ public class KisWebSocketClient {
 
     private WebSocketSession session;
 
+    /**
+     * approval_key 캐시 — 24시간 유효하므로 최초 1회만 발급 후 재사용
+     * sendSubscribeMessage() 에서 매번 REST 호출하면 rate-limit 에 걸려
+     * H0STASP0(호가) 두 번째 구독이 실패하는 문제 방지
+     */
+    private String cachedApprovalKey;
+
     // ─────────────────────────────────────────────────────────────────────
 
     /**
@@ -51,7 +58,7 @@ public class KisWebSocketClient {
     public void connect() {
         try {
             // KIS: POST /oauth2/Approval → approval_key (REST access_token 과 별개)
-            String approvalKey = tradeService.requestApprovalKey();
+            cachedApprovalKey = tradeService.requestApprovalKey();
             log.info("KIS 접속키 발급 완료");
 
             StandardWebSocketClient client = new StandardWebSocketClient();
@@ -62,7 +69,7 @@ public class KisWebSocketClient {
                             return;
                         }
                         this.session = wsSession;
-                        log.info("KIS WebSocket 연결 성공: {}", wsUrl);
+                        log.info("KIS WebSocket 연결 성공: {} (approval_key 캐시 완료)", wsUrl);
 
                         // 연결 직후 관심 종목 자동 구독 예시
                         // subscribe("005930");
@@ -108,11 +115,15 @@ public class KisWebSocketClient {
             return;
         }
         try {
-            String approvalKey = tradeService.requestApprovalKey();
+            // 캐시된 approval_key 사용 (없으면 새로 발급)
+            if (cachedApprovalKey == null) {
+                cachedApprovalKey = tradeService.requestApprovalKey();
+                log.info("approval_key 재발급 완료");
+            }
 
             Map<String, Object> request = Map.of(
                     "header", Map.of(
-                            "approval_key", approvalKey,
+                            "approval_key", cachedApprovalKey,
                             "custtype",     "P",
                             "tr_type",      trType,
                             "content-type", "utf-8"
@@ -130,6 +141,8 @@ public class KisWebSocketClient {
 
         } catch (Exception e) {
             log.error("구독 메시지 전송 실패 [stockCode={}, trId={}]: {}", stockCode, trId, e.getMessage(), e);
+            // approval_key 만료 가능성 → 캐시 초기화해서 다음 호출 시 재발급
+            cachedApprovalKey = null;
         }
     }
 

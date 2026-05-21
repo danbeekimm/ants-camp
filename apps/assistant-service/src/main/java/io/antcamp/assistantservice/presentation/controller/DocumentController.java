@@ -6,7 +6,6 @@ import io.antcamp.assistantservice.application.dto.command.UpdateDocumentCommand
 import io.antcamp.assistantservice.application.service.DocumentApplicationService;
 import io.antcamp.assistantservice.domain.model.DocType;
 import io.antcamp.assistantservice.infrastructure.security.ManagerRoleGuard;
-import io.antcamp.assistantservice.infrastructure.security.PlayerRoleGuard;
 import io.antcamp.assistantservice.presentation.dto.request.SaveDocumentRequest;
 import io.antcamp.assistantservice.presentation.dto.response.DocumentDetailResponse;
 import io.antcamp.assistantservice.presentation.dto.response.DocumentListResponse;
@@ -28,7 +27,6 @@ public class DocumentController implements DocumentControllerDocs {
 
     private final DocumentApplicationService documentApplicationService;
     private final ManagerRoleGuard managerRoleGuard;
-    private final PlayerRoleGuard playerRoleGuard;
 
     @PostMapping
     public ResponseEntity<CommonResponse<DocumentUploadResponse>> ingestDocument(
@@ -46,22 +44,18 @@ public class DocumentController implements DocumentControllerDocs {
 
     @GetMapping("/{documentId}")
     public ResponseEntity<CommonResponse<DocumentDetailResponse>> getDocument(
-            @RequestHeader("X-Role") String role,
             @PathVariable UUID documentId
     ) {
-        playerRoleGuard.require(role);
         return CommonResponse.ok(DocumentDetailResponse.from(documentApplicationService.getDocument(documentId)));
     }
 
     @GetMapping
     public ResponseEntity<CommonResponse<DocumentListResponse>> listDocuments(
-            @RequestHeader("X-Role") String role,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) DocType type,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastUpdatedAt
     ) {
-        playerRoleGuard.require(role);
         return CommonResponse.ok(DocumentListResponse.from(
                 documentApplicationService.getDocuments(type, title, keyword, lastUpdatedAt)
         ));

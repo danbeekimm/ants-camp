@@ -40,7 +40,7 @@ public class LimitOrderScheduler {
      * 10초마다 미체결 지정가 주문 체결 시도.
      * fixedDelay — 이전 실행 완료 후 10초 대기 (동시 실행 방지).
      */
-    @Scheduled(fixedDelay = 10_000)
+    @Scheduled(fixedDelay = 1000)
     public void checkAndExecuteLimitOrders() {
         LocalTime now = LocalTime.now();
 

@@ -68,6 +68,8 @@ public class GatewaySecurityConfig {
                                 "/api/market/status",
                                 "/api/stocks/**"
                         ).permitAll()
+                        // 가이드/문서 조회는 비로그인도 허용
+                        .pathMatchers(HttpMethod.GET, "/api/assistants/documents/**").permitAll()
 
                         // 관리자 전용 API
                         .pathMatchers("/api/admin/**")

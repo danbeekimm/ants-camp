@@ -18,6 +18,8 @@ spring:
       enabled: false
 
 eureka:
+  instance:
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
@@ -25,7 +27,8 @@ eureka:
 management:
   tracing:
     sampling:
-      probability: 0.1
+      probability: 0.0   # Zipkin 미사용 시 tracing 비활성화 (timeout 로그 방지)
   zipkin:
     tracing:
-      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+      export:
+        enabled: false

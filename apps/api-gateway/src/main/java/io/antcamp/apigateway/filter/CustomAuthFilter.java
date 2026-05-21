@@ -44,7 +44,8 @@ public class CustomAuthFilter extends AbstractGatewayFilterFactory<CustomAuthFil
             "/api/competitions",
             "/api/stocks",
             "/api/trades/realtime/status",
-            "/api/market/status"
+            "/api/market/status",
+            "/api/assistants/documents"   // 가이드/문서 조회 — 비로그인 허용
     );
 
     // ── Redis 캐시 설정 ────────────────────────────────────────────────────────
