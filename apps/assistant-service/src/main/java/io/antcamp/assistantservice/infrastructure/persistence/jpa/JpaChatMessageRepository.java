@@ -21,10 +21,17 @@ public interface JpaChatMessageRepository extends JpaRepository<ChatMessageEntit
     @Query("SELECT COALESCE(MAX(m.seq), 0) FROM ChatMessageEntity m WHERE m.chatSessionId = :chatSessionId")
     int findMaxSeqForUpdate(@Param("chatSessionId") UUID chatSessionId);
 
-    @Query("SELECT m FROM ChatMessageEntity m WHERE m.role = :role AND m.status = :status AND m.createdAt < :threshold")
-    List<ChatMessageEntity> findPendingUserMessages(
+    @Query("""
+            SELECT m FROM ChatMessageEntity m
+            WHERE m.role = :role
+              AND m.status = :status
+              AND m.createdAt < :threshold
+              AND m.retryCount < :maxRetry
+            """)
+    List<ChatMessageEntity> findReconcileTargets(
             @Param("role") Role role,
             @Param("status") MessageStatus status,
-            @Param("threshold") LocalDateTime threshold
+            @Param("threshold") LocalDateTime threshold,
+            @Param("maxRetry") int maxRetry
     );
 }

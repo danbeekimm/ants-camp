@@ -22,6 +22,8 @@ public class ChatMessage {
     private List<SourceReference> sources;
     private MessageStatus status;
     private LocalDateTime createdAt;
+    private int retryCount;
+    private String failureReason;
 
     public static ChatMessage createUserMessage(UUID chatSessionId, String content, int seq) {
         if (content == null || content.isBlank()) throw new InvalidMessageContentException();
@@ -32,6 +34,7 @@ public class ChatMessage {
                 .seq(seq)
                 .sources(List.of())
                 .status(MessageStatus.PENDING)
+                .retryCount(0)
                 .build();
     }
 
@@ -44,6 +47,7 @@ public class ChatMessage {
                 .seq(seq)
                 .sources(sources != null ? sources : List.of())
                 .status(MessageStatus.COMPLETED)
+                .retryCount(0)
                 .build();
     }
 
@@ -51,9 +55,23 @@ public class ChatMessage {
         this.status = MessageStatus.COMPLETED;
     }
 
+    public void incrementRetry() {
+        this.retryCount = this.retryCount + 1;
+    }
+
+    public void markFailed(String reason) {
+        this.status = MessageStatus.FAILED;
+        this.failureReason = reason;
+    }
+
+    public boolean isReconcilable(int maxRetry) {
+        return status == MessageStatus.PENDING && retryCount < maxRetry;
+    }
+
     public static ChatMessage restore(UUID chatMessageId, UUID chatSessionId, String content,
                                       Role role, int seq, List<SourceReference> sources,
-                                      MessageStatus status, LocalDateTime createdAt) {
+                                      MessageStatus status, LocalDateTime createdAt,
+                                      int retryCount, String failureReason) {
         return ChatMessage.builder()
                 .chatMessageId(chatMessageId)
                 .chatSessionId(chatSessionId)
@@ -63,6 +81,8 @@ public class ChatMessage {
                 .sources(sources != null ? sources : List.of())
                 .status(status)
                 .createdAt(createdAt)
+                .retryCount(retryCount)
+                .failureReason(failureReason)
                 .build();
     }
 }

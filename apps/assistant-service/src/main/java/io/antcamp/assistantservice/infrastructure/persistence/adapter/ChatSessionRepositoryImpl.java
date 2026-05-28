@@ -58,10 +58,15 @@ public class ChatSessionRepositoryImpl implements ChatSessionRepository {
     }
 
     @Override
-    public List<ChatMessage> findPendingUserMessages(LocalDateTime createdBefore) {
-        return messageRepository.findPendingUserMessages(Role.USER, MessageStatus.PENDING, createdBefore)
+    public List<ChatMessage> findReconcileTargets(LocalDateTime createdBefore, int maxRetry) {
+        return messageRepository.findReconcileTargets(Role.USER, MessageStatus.PENDING, createdBefore, maxRetry)
                 .stream()
                 .map(ChatMessageEntity::toDomain)
                 .toList();
+    }
+
+    @Override
+    public ChatMessage save(ChatMessage chatMessage) {
+        return messageRepository.save(ChatMessageEntity.from(chatMessage)).toDomain();
     }
 }

@@ -51,6 +51,12 @@ public class ChatMessageEntity extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private MessageStatus status;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "failure_reason", length = 100)
+    private String failureReason;
+
     public static ChatMessageEntity from(ChatMessage domain) {
         return ChatMessageEntity.builder()
                 .chatMessageId(domain.getChatMessageId())
@@ -60,6 +66,8 @@ public class ChatMessageEntity extends BaseEntity {
                 .seq(domain.getSeq())
                 .sources(JsonConverter.toJson(domain.getSources()))
                 .status(domain.getStatus())
+                .retryCount(domain.getRetryCount())
+                .failureReason(domain.getFailureReason())
                 .build();
     }
 
@@ -69,7 +77,8 @@ public class ChatMessageEntity extends BaseEntity {
         );
         return ChatMessage.restore(
                 this.chatMessageId, this.chatSessionId, this.content,
-                this.role, this.seq, sourceList, this.status, this.getCreatedAt()
+                this.role, this.seq, sourceList, this.status, this.getCreatedAt(),
+                this.retryCount, this.failureReason
         );
     }
 }

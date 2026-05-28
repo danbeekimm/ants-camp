@@ -38,6 +38,14 @@ public class PairwiseResultEntity extends BaseEntity {
     @Column(name = "verdict", nullable = false, length = 10)
     private Verdict verdict;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "forward_verdict", length = 10)
+    private Verdict forwardVerdict;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reverse_verdict", length = 10)
+    private Verdict reverseVerdict;
+
     public static PairwiseResultEntity from(PairwiseResult domain) {
         return PairwiseResultEntity.builder()
                 .pairwiseResultId(domain.getPairwiseResultId())
@@ -46,12 +54,15 @@ public class PairwiseResultEntity extends BaseEntity {
                 .question(domain.getQuestion())
                 .judgeModel(domain.getJudgeModel())
                 .verdict(domain.getVerdict())
+                .forwardVerdict(domain.getForwardVerdict())
+                .reverseVerdict(domain.getReverseVerdict())
                 .build();
     }
 
     public PairwiseResult toDomain() {
         return PairwiseResult.restore(
                 this.pairwiseResultId, this.evalRunIdA, this.evalRunIdB,
-                this.question, this.judgeModel, this.verdict);
+                this.question, this.judgeModel, this.verdict,
+                this.forwardVerdict, this.reverseVerdict);
     }
 }

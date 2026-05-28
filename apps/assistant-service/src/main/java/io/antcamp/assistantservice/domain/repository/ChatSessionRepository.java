@@ -19,5 +19,7 @@ public interface ChatSessionRepository {
 
     List<ChatMessage> findMessages(UUID chatSessionId);
 
-    List<ChatMessage> findPendingUserMessages(LocalDateTime createdBefore);
+    List<ChatMessage> findReconcileTargets(LocalDateTime createdBefore, int maxRetry);
+
+    ChatMessage save(ChatMessage chatMessage);
 }

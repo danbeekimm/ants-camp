@@ -69,14 +69,28 @@ public class PairwiseProcessor {
                 .collect(Collectors.toMap(RagQuerySnapshot::userQuery, RagQuerySnapshot::llmResponse));
     }
 
+    // 양방향 평가로 위치 편향(앞쪽 유리) 차단:
+    //   forward  : (A, B) → judge가 [응답 A]=responseA, [응답 B]=responseB 로 인식
+    //   reverse  : (B, A) → judge가 [응답 A]=responseB, [응답 B]=responseA 로 인식
+    //   reverse 결과를 원래 A/B 관점으로 swap 후 두 방향 일치하면 그 결과, 불일치 시 TIE
     private void compareAndSave(RunPairwiseCommand command, String question,
                                   String responseA, String responseB, String judgeModel) {
         try {
-            // A/B 중 어느 응답이 더 나은지 verdict 저장
-            Verdict verdict = judgeLlmPort.compare(judgeModel, question, responseA, responseB);
-            pairwiseRepository.save(PairwiseResult.create(
-                    command.evalRunIdA(), command.evalRunIdB(), question, judgeModel, verdict));
-            log.info("Pairwise 판정 완료: judgeModel={}, question={}, verdict={}", judgeModel, question, verdict);
+            Verdict forwardVerdict = judgeLlmPort.compare(judgeModel, question, responseA, responseB);
+            Verdict reverseVerdict = judgeLlmPort.compare(judgeModel, question, responseB, responseA);
+
+            PairwiseResult result = PairwiseResult.createCounterbalanced(
+                    command.evalRunIdA(), command.evalRunIdB(), question, judgeModel,
+                    forwardVerdict, reverseVerdict);
+            pairwiseRepository.save(result);
+
+            if (result.exposedPositionBias()) {
+                log.warn("Pairwise 위치 편향 노출 → TIE 처리: judgeModel={}, question={}, fwd={}, rev={}",
+                        judgeModel, question, forwardVerdict, reverseVerdict);
+            } else {
+                log.info("Pairwise 판정 완료: judgeModel={}, question={}, fwd={}, rev={}, verdict={}",
+                        judgeModel, question, forwardVerdict, reverseVerdict, result.getVerdict());
+            }
         } catch (Exception e) {
             log.error("Pairwise 판정 실패, 해당 조합 건너뜀: judgeModel={}, question={}", judgeModel, question, e);
         }
