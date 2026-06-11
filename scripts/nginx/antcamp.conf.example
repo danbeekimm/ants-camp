@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────────────────
+# AntCamp nginx 리버스 프록시 예시 (OCI 단일 인스턴스)
+#
+# 실제 운영 설정은 인스턴스의 /etc/nginx/sites-available/ 에 있다(이 파일은 참고용).
+# 전제
+#   - Cloudflare가 공개 TLS/프록시 담당 → 오리진은 Cloudflare Origin 인증서로 443 종단
+#       /etc/nginx/ssl/cloudflare-origin.pem , cloudflare-origin.key
+#       Cloudflare SSL/TLS 모드: Full (strict) 권장
+#   - compose에서 gateway=127.0.0.1:8080, grafana=127.0.0.1:3000 바인딩
+#   - 기존 정적 사이트 server 블록은 그대로 두고, 아래 server 블록만 추가
+#
+# 설치
+#   sudo cp scripts/nginx/antcamp.conf.example /etc/nginx/sites-available/antscamp.conf
+#   sudo ln -s /etc/nginx/sites-available/antscamp.conf /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+# ──────────────────────────────────────────────────────────────────────────
+
+# ── api: Spring Cloud Gateway ──
+server {
+    listen 443 ssl;
+    server_name api.antscamp.site;
+
+    ssl_certificate     /etc/nginx/ssl/cloudflare-origin.pem;
+    ssl_certificate_key /etc/nginx/ssl/cloudflare-origin.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        # WebSocket (trade-service)
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+    }
+}
+
+# ── watch: Grafana ──
+server {
+    listen 443 ssl;
+    server_name watch.antscamp.site;
+
+    ssl_certificate     /etc/nginx/ssl/cloudflare-origin.pem;
+    ssl_certificate_key /etc/nginx/ssl/cloudflare-origin.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;     # Grafana Live
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+
+# ── HTTP → HTTPS 리다이렉트 ──
+server {
+    listen 80;
+    server_name api.antscamp.site watch.antscamp.site;
+    return 301 https://$host$request_uri;
+}
+
+# 참고: 프론트(app.antscamp.site)는 별도 정적 서버 블록에서 처리한다.
+# 게이트웨이 CORS 허용 오리진(cors.allowed-origins)에 https://app.antscamp.site 를
+# 반드시 포함해야 한다 — 값은 config 레포(ants-camp-config/configs/api-gateway)에서 설정.
