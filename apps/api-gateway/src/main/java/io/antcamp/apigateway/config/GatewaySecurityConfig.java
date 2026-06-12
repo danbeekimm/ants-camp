@@ -57,6 +57,10 @@ public class GatewaySecurityConfig {
                                 "/api/notifications/interactions"
                         ).permitAll()
 
+                        // STOMP WebSocket 핸드셰이크 — 브라우저 WebSocket은 Authorization
+                        // 헤더를 보낼 수 없고, 공개 시세 스트림이라 무인증 (구 AWS 구조와 동일)
+                        .pathMatchers("/ws-stomp/**").permitAll()
+
                         // 관리자 전용 API
                         .pathMatchers("/api/admin/**")
                         .hasRole("ADMIN")
