@@ -90,7 +90,11 @@ public class CompetitionServiceImpl implements CompetitionService {
                 command.description(),
                 RegisterPeriod.of(command.registerStartAt(), command.registerEndAt()),
                 CompetitionPeriod.of(command.competitionStartAt(), command.competitionEndAt()),
-                ParticipantCount.of(command.minParticipants(), command.maxParticipants())
+                // 기존 신청 인원(current)을 보존해야 한다 — 0으로 리셋되면 자동 시작 스케줄러가 최소 인원 미달로 대회를 취소한다
+                ParticipantCount.of(
+                        command.minParticipants(),
+                        command.maxParticipants(),
+                        competition.getParticipantCount().getCurrent())
         );
 
         // isReadable = true인 경우 변경 공지 저장
