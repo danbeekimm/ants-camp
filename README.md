@@ -18,7 +18,7 @@ AntCamp는 사용자가 가상 자금으로 실시간 시세에 기반해 주식
 - [기술 스택](#기술-스택)
 - [디렉토리 구조](#디렉토리-구조)
 - [로컬 실행](#로컬-실행)
-- [배포 (CI/CD & IaC)](#배포-cicd--iac)
+- [배포 (CI/CD)](#배포-cicd)
 - [관측성 & AIOps](#관측성--aiops)
 - [참고 문서](#참고-문서)
 
@@ -99,7 +99,7 @@ AntCamp는 사용자가 가상 자금으로 실시간 시세에 기반해 주식
 | **실시간** | WebSocket / STOMP, KIS 한국투자증권 WebSocket·REST |
 | **AI/LLM** | Spring AI, OpenAI, Anthropic Claude, Google Gemini, pgvector RAG |
 | **관측성** | Micrometer + Prometheus, Grafana, Loki + Promtail, Alertmanager, Zipkin |
-| **인프라/운영** | Docker / Docker Compose, AWS (ECR·EC2·Aurora·CodeDeploy·SSM), Terraform, docker-java |
+| **인프라/운영** | Docker / Docker Compose, OCI 단일 인스턴스(Ubuntu aarch64 · Ampere A1), GitHub Actions(CI/CD), GHCR(컨테이너 레지스트리), nginx + Cloudflare(TLS 종단), docker-java |
 | **테스트/부하** | JUnit 5, JMeter |
 
 ---
@@ -121,13 +121,16 @@ AntCamp는 사용자가 가상 자금으로 실시간 시세에 기반해 주식
 │   └── config-server/
 ├── common/                   # 공유 모듈 (BaseEntity, CommonResponse, ErrorCode 등)
 ├── monitoring/               # Prometheus / Grafana / Loki / Promtail / Alertmanager 설정
-├── deploy/                   # AWS CodeDeploy appspec + 배포 훅 스크립트
-├── terraform/                # AWS IaC (VPC, EC2, Aurora, ECR, SG, user_data 템플릿)
-├── script/                   # init.sql(DB 초기화), seed-documents.sh(RAG 시드), deploy.sh
+├── scripts/                  # oci-setup.sh(인스턴스 부트스트랩), nginx/ 리버스 프록시 예시
+├── script/                   # init.sql(DB 초기화), seed-documents.sh(RAG 시드)
 ├── diagrams/                 # 아키텍처/RAG/평가/AIOps 다이어그램(PNG, Mermaid 원본)
 ├── jmeter-test/              # trade-service 부하 테스트 (.jmx + users.csv)
-├── docker-compose.yml        # 로컬 전체 스택 구동
-├── .env.example              # 환경변수 템플릿
+├── docker-compose.yml        # 로컬 전체 스택 구동 (개발용)
+├── docker-compose.lite.yml   # OCI 단일 인스턴스 배포용 (경량 스택, GHCR 이미지 pull)
+├── deploy.sh                 # 인스턴스 운영 헬퍼 (deploy/build/logs/ps/restart/down)
+├── .env.example              # 환경변수 템플릿 (IMAGE_TAG 포함)
+├── DEPLOY.md                 # 배포 운영 가이드 (OCI 단일 인스턴스)
+├── docs/                     # 배포 전환 진행/잔여 작업 기록 (DEPLOY_PROGRESS / DEPLOY_TODO)
 ├── build.gradle / settings.gradle
 └── *.md                      # 아키텍처 상세 문서 (아래 '참고 문서' 참조)
 ```
@@ -186,30 +189,54 @@ docker compose up -d --build
 
 ---
 
-## 배포 (CI/CD & IaC)
+## 배포 (CI/CD)
+
+> **2026-06 인프라 전환**: 기존 **AWS 멀티 EC2**(5대 역할 분리 · Aurora · ECR · CodeDeploy/SSM · Terraform IaC) 구성에서
+> **OCI 단일 인스턴스**(Ubuntu aarch64 · Ampere A1, 4vCPU/24GB) + **GitHub Actions → GHCR → SSH** 파이프라인으로 이전했습니다.
+> 운영 상세는 [`DEPLOY.md`](DEPLOY.md), 전환 기록은 [`docs/DEPLOY_PROGRESS.md`](docs/DEPLOY_PROGRESS.md)를 참고하세요.
+
+### 배포 토폴로지
+
+```
+GitHub (dev push)
+  └─ Actions (cd.yml)
+       ├─ detect : 변경 서비스 감지 (common/compose/루트 gradle 변경 → 전체)
+       ├─ build  : ubuntu-24.04-arm 러너에서 linux/arm64 이미지 빌드 → GHCR push
+       └─ deploy : SSH(appleboy/ssh-action) → git 동기화 → docker compose pull + up -d
+                        │
+                   OCI 단일 인스턴스  (docker-compose.lite.yml 한 파일로 전체 스택)
+                        └─ 호스트 nginx(80/443) ──TLS 종단── Cloudflare
+                              · api.…  → 127.0.0.1:8080 (gateway)
+                              · watch.… → 127.0.0.1:3000 (grafana)
+                              · 모든 컨테이너 포트는 127.0.0.1 바인딩 (외부 직노출 없음)
+```
+
+- **빌드는 GitHub ARM 러너**가 전담 → 인스턴스는 이미지 `pull`만 (4vCPU 박스에서 빌드 부하 제거)
+- 이미지: `ghcr.io/danbeekimm/<service>:latest` (+ `:<commit-sha>`)
+- 단일 박스 메모리 예산(24GB): JVM 힙 합계 ~3.3GB(서비스별 `-Xmx` 256~512m), 실측 RSS ≈ 9GB(유휴)/11~12GB(부하)
 
 ### CI/CD (GitHub Actions, `.github/workflows/`)
 
-- **ci.yml** — `main`/`dev` 대상 PR에서 `./gradlew build -x test` 수행
-- **cd.yml** — `main` push 시:
-  1. 변경된 서비스 감지 → 빌드 매트릭스 생성
-  2. 멀티스테이지 Dockerfile로 이미지 빌드
-  3. AWS ECR 푸시
-  4. AWS SSM RunCommand로 대상 EC2에 배포
+- **ci.yml** — `dev` 대상 PR에서 `./gradlew build -x test` 수행 (빌드 검증, 테스트 미실행)
+- **cd.yml** — `dev` push 시:
+  1. **detect** — 변경된 `apps/<service>/` 감지 (`common/`·루트 Gradle·`docker-compose.lite.yml`·`cd.yml` 변경 시 **전체** 빌드)
+  2. **build** — `ubuntu-24.04-arm` 러너에서 서비스별 멀티스테이지 Dockerfile로 `linux/arm64` 이미지 빌드 → **GHCR 푸시** (GHA 캐시 사용)
+  3. **deploy** — SSH 접속 → `git reset --hard origin/dev` → `docker compose -f docker-compose.lite.yml pull && up -d`
+  - 수동 실행(`workflow_dispatch`): `deploy_all=true` → 전체 빌드 후 배포 / `false` → 빌드 없이 현재 GHCR 이미지로 재배포(pull+up)만
 
-**EC2 ↔ 서비스 배치**
+**필요한 GitHub Secrets**: `OCI_HOST`, `OCI_USER`, `OCI_SSH_KEY`, `OCI_APP_DIR`, `OCI_PORT`(선택). GHCR push/pull은 워크플로 기본 `GITHUB_TOKEN`으로 처리됩니다.
 
-| EC2 | 배포 서비스 |
+### 인스턴스 운영 (`deploy.sh`)
+
+인스턴스에서 수동 운영·디버깅·폴백 빌드에 사용합니다 (평상시 배포는 Actions가 담당).
+
+| 명령 | 동작 |
 |---|---|
-| domain-ec2 | user, asset, ranking |
-| domain2-ec2 | trade, competition |
-| notification-ec2 | notification, assistant |
-| gateway-ec2 | api-gateway |
-| infra-ec2 | config-server, eureka-server |
+| `./deploy.sh deploy` | GHCR 최신 이미지 pull + 기동 (수동 배포) |
+| `./deploy.sh build [svc]` | 인스턴스에서 직접 빌드 (레지스트리 없이 폴백) |
+| `./deploy.sh logs [svc]` / `ps` / `restart [svc]` / `down` | 로그 / 상태 / 재시작 / 중지 |
 
-### IaC (Terraform, `terraform/`)
-
-VPC, Security Group, EC2(역할별), Aurora PostgreSQL, ECR, IAM, S3, Elastic IP 등 AWS 인프라를 정의합니다. `terraform/user_data/*.sh.tpl`은 EC2 타입별 부트스트랩(Docker/Kafka/Monitoring 스택 설치)을 담당합니다.
+최초 셋업은 `scripts/oci-setup.sh`(docker·swap·방화벽)와 `scripts/nginx/antcamp.conf.example`(리버스 프록시)로 부트스트랩합니다.
 
 ---
 
@@ -232,6 +259,9 @@ VPC, Security Group, EC2(역할별), Aurora PostgreSQL, ECR, IAM, S3, Elastic IP
 
 | 문서 | 내용 |
 |---|---|
+| [DEPLOY.md](DEPLOY.md) | 배포 운영 가이드 (OCI 단일 인스턴스 셋업·Secrets·운영 명령) |
+| [docs/DEPLOY_PROGRESS.md](docs/DEPLOY_PROGRESS.md) | AWS → OCI 배포 전환 작업 기록 |
+| [docs/DEPLOY_TODO.md](docs/DEPLOY_TODO.md) | 배포 잔여 작업·운영 치트시트·트러블슈팅 |
 | [aiops-architecture.md](aiops-architecture.md) | AIOps 파이프라인 (알림 → LLM 분석 → Slack HITL) 상세 |
 | [rag-architecture.md](rag-architecture.md) | assistant-service RAG 아키텍처 |
 | [rag-chunking-embedding.md](rag-chunking-embedding.md) | 문서 청킹/임베딩 전략 |

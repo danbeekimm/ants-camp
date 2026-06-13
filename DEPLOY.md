@@ -18,7 +18,7 @@ GitHub(dev push)
 - **빌드는 GitHub ARM 러너**가 담당 → 인스턴스는 `pull`만 (4vCPU 박스에서 빌드 부하 제거)
 - 이미지: `ghcr.io/danbeekimm/<service>:latest` (+ `:<commit-sha>`)
 - **진입점은 호스트 nginx(80/443)** — TLS 종단 후 내부로 proxy_pass
-  - `api.…` → `127.0.0.1:8080`(gateway), `monitoring.…` → `127.0.0.1:3000`(grafana)
+  - `api.antscamp.site` → `127.0.0.1:8080`(gateway), `watch.antscamp.site` → `127.0.0.1:3000`(grafana)
   - 모든 컨테이너 포트는 `127.0.0.1` 바인딩(외부 직노출 없음). 기존 정적사이트(80)는 그대로
   - ⚠️ Docker 게시 포트는 호스트 iptables INPUT을 우회하므로, 외부 노출 통제는
     **127.0.0.1 바인딩 + OCI 보안목록(80/443만)**으로 한다
@@ -61,7 +61,7 @@ sudo cp scripts/nginx/antcamp.conf.example /etc/nginx/sites-available/antcamp.co
 # 도메인/포트 수정 후
 sudo ln -s /etc/nginx/sites-available/antcamp.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d api.antcamp.site -d monitoring.antcamp.site   # TLS
+sudo certbot --nginx -d api.antscamp.site -d watch.antscamp.site   # TLS
 ```
 
 기존 정적 사이트 server 블록은 건드리지 않는다(별도 server 블록 추가만).

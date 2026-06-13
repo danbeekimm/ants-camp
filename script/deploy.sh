@@ -76,7 +76,7 @@ deploy_local() {
 
   echo ""
   echo "스택 시작 완료"
-  echo "  Grafana      : https://monitoring.antcamp.site"
+  echo "  Grafana      : https://watch.antscamp.site"
   echo "  Prometheus   : http://localhost:${PROMETHEUS_PORT:-9090}"
   echo "  Alertmanager : http://localhost:${ALERTMANAGER_PORT:-9093}"
   echo "  Notification : http://localhost:${NOTIFICATION_SERVER_PORT:-8098}"
