@@ -144,12 +144,18 @@ public class TradeServiceImpl implements TradeService {
     public StockPriceList stockPriceList(StockList stockList, LocalDateTime dateTime) {
         Map<String, String> stockMap = new HashMap<>();
         for (String stockCode : stockList.stockList()) {
-            String price = redisTemplate.opsForValue().get(stockCode);
-            if (price == null) {
-                price = String.valueOf(getMinutePrice(stockCode, dateTime));
-                redisTemplate.opsForValue().set(stockCode, price, Duration.ofSeconds(60));
+            try {
+                String price = redisTemplate.opsForValue().get(stockCode);
+                if (price == null) {
+                    price = String.valueOf(getMinutePrice(stockCode, dateTime));
+                    redisTemplate.opsForValue().set(stockCode, price, Duration.ofSeconds(60));
+                }
+                stockMap.put(stockCode, price);
+            } catch (Exception e) {
+                // 종목별 실패(예: KIS 초당 한도 EGW00201)는 건너뛰고 부분 결과를 반환한다.
+                // 한 종목 실패가 전체 500을 만들지 않도록 — 프론트(fetchStockPriceList)는 부분맵/누락 키를 견딘다.
+                log.warn("현재가 일괄 조회 실패 — 종목 건너뜀 stockCode={} : {}", stockCode, e.getMessage());
             }
-            stockMap.put(stockCode, price);
         }
         return new StockPriceList(stockMap);
     }

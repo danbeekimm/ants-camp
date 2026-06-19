@@ -6,6 +6,7 @@ import io.antcamp.tradeservice.infrastructure.dto.OrderBookData;
 import io.antcamp.tradeservice.infrastructure.dto.StockPriceData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,10 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
+
+    /** stockPriceList(현재가 일괄 조회) 캐시와 동일한 TTL — key=stockCode */
+    private static final Duration PRICE_CACHE_TTL = Duration.ofSeconds(60);
 
     // ─────────────────────────────────────────────────────────────────────
 
@@ -118,6 +124,12 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
 
             // STOMP 브로드캐스트 → 프론트엔드가 /topic/price/{stockCode} 구독
             messagingTemplate.convertAndSend("/topic/price/" + price.stockCode(), price);
+
+            // 현재가 캐시 워밍 — stockPriceList(현재가 일괄 조회)가 읽는 key=stockCode 에 기록.
+            // 장중 구독 종목은 이 실시간 틱으로 캐시가 채워져 KIS REST 재호출(초당 한도 EGW00201 → 500)을 피한다.
+            // reader: TradeServiceImpl#stockPriceList 의 StringRedisTemplate.get(stockCode) 와 동일 포맷(String).
+            redisTemplate.opsForValue()
+                    .set(price.stockCode(), String.valueOf(price.currentPrice()), PRICE_CACHE_TTL);
 
         } catch (NumberFormatException e) {
             log.error("숫자 파싱 실패 — rawData={}", rawData, e);
