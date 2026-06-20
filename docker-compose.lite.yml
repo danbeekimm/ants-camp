@@ -63,6 +63,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: antcamp-kafka
+    mem_limit: 1280m
     ports:
       - "127.0.0.1:${KAFKA_PORT}:9092"
     environment:
@@ -96,6 +97,7 @@ services:
       context: .
       dockerfile: apps/eureka-server/Dockerfile
     container_name: antcamp-eureka-server
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${EUREKA_SERVER_PORT}:8761"
     environment:
@@ -118,6 +120,7 @@ services:
       context: .
       dockerfile: apps/config-server/Dockerfile
     container_name: antcamp-config-server
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${CONFIG_SERVER_PORT}:8888"
     environment:
@@ -142,6 +145,7 @@ services:
       context: .
       dockerfile: apps/api-gateway/Dockerfile
     container_name: antcamp-gateway
+    mem_limit: 1g
     ports:
       # nginx가 api.antscamp.site(443) → 이 포트로 proxy_pass → 127.0.0.1 바인딩
       - "127.0.0.1:${GATEWAY_SERVER_PORT}:8080"
@@ -167,6 +171,7 @@ services:
       context: .
       dockerfile: apps/user-service/Dockerfile
     container_name: antcamp-user
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${USER_SERVER_PORT}:8082"
     environment:
@@ -200,6 +205,7 @@ services:
       context: .
       dockerfile: apps/trade-service/Dockerfile
     container_name: antcamp-trade
+    mem_limit: 1280m
     ports:
       - "127.0.0.1:${TRADE_SERVER_PORT}:8084"
     environment:
@@ -242,6 +248,7 @@ services:
       context: .
       dockerfile: apps/asset-service/Dockerfile
     container_name: antcamp-asset
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${ASSET_SERVER_PORT}:8086"
     environment:
@@ -277,6 +284,7 @@ services:
       context: .
       dockerfile: apps/competition-service/Dockerfile
     container_name: antcamp-competition
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${COMPETITION_SERVER_PORT}:8092"
     environment:
@@ -313,6 +321,7 @@ services:
       context: .
       dockerfile: apps/ranking-service/Dockerfile
     container_name: antcamp-ranking
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${RANKING_SERVER_PORT}:8094"
     environment:
@@ -349,6 +358,7 @@ services:
       context: .
       dockerfile: apps/assistant-service/Dockerfile
     container_name: antcamp-assistant
+    mem_limit: 1280m
     ports:
       - "127.0.0.1:${ASSISTANT_SERVER_PORT}:8096"
     environment:
@@ -385,6 +395,7 @@ services:
       context: .
       dockerfile: apps/notification-service/Dockerfile
     container_name: antcamp-notification
+    mem_limit: 1g
     ports:
       - "127.0.0.1:${NOTIFICATION_SERVER_PORT}:8098"
     environment:
