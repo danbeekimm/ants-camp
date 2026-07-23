@@ -1,5 +1,6 @@
 package io.antcamp.notificationservice.infrastructure.persistence;
 
+import io.antcamp.notificationservice.domain.model.AlertStatus;
 import io.antcamp.notificationservice.domain.model.Notification;
 import io.antcamp.notificationservice.domain.repository.NotificationRepository;
 import io.antcamp.notificationservice.domain.repository.NotificationSearchCriteria;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,5 +54,10 @@ public class NotificationRepositoryImpl implements NotificationRepository {
                 .map(NotificationEntity::toDomain)
                 .toList();
         return new PageResult<>(content, springPage.getTotalElements(), springPage.getTotalPages(), pagingRequest.page());
+    }
+
+    @Override
+    public Map<AlertStatus, Long> countByStatus(NotificationSearchCriteria criteria) {
+        return notificationQueryRepository.countByStatus(criteria);
     }
 }

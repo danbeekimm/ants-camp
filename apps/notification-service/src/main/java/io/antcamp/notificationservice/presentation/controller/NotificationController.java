@@ -5,11 +5,13 @@ import common.dto.CommonResponse;
 import io.antcamp.notificationservice.application.dto.command.PrometheusAlertCommand;
 import io.antcamp.notificationservice.application.dto.command.SlackActionCommand;
 import io.antcamp.notificationservice.application.dto.response.NotificationDetailResponse;
+import io.antcamp.notificationservice.application.dto.response.NotificationStatusCountResponse;
 import io.antcamp.notificationservice.application.dto.response.NotificationSummaryResponse;
 import io.antcamp.notificationservice.application.service.NotificationApplicationService;
 import io.antcamp.notificationservice.application.service.NotificationQueryService;
 import io.antcamp.notificationservice.domain.repository.PageResult;
 import io.antcamp.notificationservice.presentation.dto.request.NotificationSearchRequest;
+import io.antcamp.notificationservice.presentation.dto.request.NotificationStatsRequest;
 import io.antcamp.notificationservice.presentation.dto.request.PrometheusWebhookRequest;
 import io.antcamp.notificationservice.presentation.dto.request.SlackInteractivePayload;
 import io.antcamp.notificationservice.presentation.controller.docs.NotificationControllerDocs;
@@ -115,6 +117,19 @@ public class NotificationController implements NotificationControllerDocs {
         log.info("알림 목록 조회: userId={}, role={}", userId, role);
         return CommonResponse.ok("알림 목록 조회에 성공했습니다.",
                 notificationQueryService.search(request.toQuery(page)));
+    }
+
+    /**
+     * 알림 상태별 카운트 조회 — 페이지의 2개 필터(심각도·소스)에 따라 전체/4개 상태별 건수를 한 번에 집계한다.
+     */
+    @GetMapping("/admin/stats")
+    public ResponseEntity<CommonResponse<NotificationStatusCountResponse>> stats(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Role", required = false) String role,
+            @ModelAttribute NotificationStatsRequest request) {
+        log.info("알림 상태별 카운트 조회: userId={}, role={}", userId, role);
+        return CommonResponse.ok("알림 상태별 카운트 조회에 성공했습니다.",
+                notificationQueryService.countByStatus(request.toQuery()));
     }
 
     /**

@@ -1,9 +1,12 @@
 package io.antcamp.notificationservice.application.service;
 
 import io.antcamp.notificationservice.application.dto.query.NotificationSearchQuery;
+import io.antcamp.notificationservice.application.dto.query.NotificationStatsQuery;
 import io.antcamp.notificationservice.application.dto.response.NotificationDetailResponse;
+import io.antcamp.notificationservice.application.dto.response.NotificationStatusCountResponse;
 import io.antcamp.notificationservice.application.dto.response.NotificationSummaryResponse;
 import io.antcamp.notificationservice.domain.exception.NotificationException;
+import io.antcamp.notificationservice.domain.model.AlertStatus;
 import io.antcamp.notificationservice.domain.model.Notification;
 import io.antcamp.notificationservice.domain.repository.NotificationRepository;
 import io.antcamp.notificationservice.domain.repository.PageResult;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -30,6 +34,11 @@ public class NotificationQueryService {
                 .map(NotificationSummaryResponse::of)
                 .toList();
         return new PageResult<>(content, result.totalElements(), result.totalPages(), result.currentPage());
+    }
+
+    public NotificationStatusCountResponse countByStatus(NotificationStatsQuery query) {
+        Map<AlertStatus, Long> counts = notificationRepository.countByStatus(query.toCriteria());
+        return NotificationStatusCountResponse.of(counts);
     }
 
     public NotificationDetailResponse findById(UUID notificationId) {

@@ -2,10 +2,12 @@ package io.antcamp.tradeservice.infrastructure.config.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.antcamp.tradeservice.infrastructure.client.KisWebSocketDisconnectedEvent;
 import io.antcamp.tradeservice.infrastructure.dto.OrderBookData;
 import io.antcamp.tradeservice.infrastructure.dto.StockPriceData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -23,7 +25,8 @@ import java.util.List;
  * KIS WebSocket 수신 핸들러
  *
  * 수신 메시지 종류
- *  1) PINGPONG — KIS 서버가 30초마다 전송. "PONG" 으로 응답하지 않으면 연결 끊김.
+ *  1) PINGPONG — KIS 서버가 약 10초마다 JSON({"header":{"tr_id":"PINGPONG",...}})으로 전송.
+ *     받은 payload를 그대로 되돌려 보내야 연결이 유지된다 (무응답 시 ~100초 후 1006으로 끊김).
  *  2) "0|..." / "1|..." — 실시간 데이터 (파이프 구분자)
  *  3) JSON — 구독 성공/실패 응답
  */
@@ -35,6 +38,7 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** stockPriceList(현재가 일괄 조회) 캐시와 동일한 TTL — key=stockCode */
     private static final Duration PRICE_CACHE_TTL = Duration.ofSeconds(60);
@@ -51,21 +55,14 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
         String payload = message.getPayload();
         log.debug("KIS 수신 원문: {}", payload);
 
-        // ① PINGPONG — 반드시 "PONG"으로 응답해야 연결 유지됨 (30초 주기)
-        if ("PINGPONG".equals(payload.trim())) {
-            session.sendMessage(new TextMessage("PONG"));
-            log.debug("PINGPONG 응답 완료");
-            return;
-        }
-
-        // ② 실시간 데이터 (파이프 구분자 포맷)
+        // ① 실시간 데이터 (파이프 구분자 포맷)
         if (payload.startsWith("0|") || payload.startsWith("1|")) {
             handleRealtimeData(payload);
             return;
         }
 
-        // ③ JSON — 구독 등록/해제 응답
-        handleJsonResponse(payload);
+        // ② JSON — PINGPONG 하트비트 및 구독 등록/해제 응답
+        handleJsonResponse(session, payload);
     }
 
     // ─── 실시간 데이터 파싱 ──────────────────────────────────────────────
@@ -193,12 +190,20 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    // ─── JSON 구독 응답 처리 ─────────────────────────────────────────────
+    // ─── JSON 하트비트/구독 응답 처리 ────────────────────────────────────
 
-    private void handleJsonResponse(String payload) {
+    private void handleJsonResponse(WebSocketSession session, String payload) {
         try {
             JsonNode root   = objectMapper.readTree(payload);
             String trId     = root.path("header").path("tr_id").asText();
+
+            // PINGPONG은 받은 payload를 그대로 반송해야 연결이 유지된다 (KIS 규격)
+            if ("PINGPONG".equals(trId)) {
+                session.sendMessage(new TextMessage(payload));
+                log.debug("PINGPONG 응답 완료");
+                return;
+            }
+
             String msgCode  = root.path("body").path("msg_cd").asText();
             String msg      = root.path("body").path("msg1").asText();
             log.info("구독 응답 [tr_id={}, msg_cd={}]: {}", trId, msgCode, msg);
@@ -212,6 +217,8 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         log.warn("KIS WebSocket 연결 종료: status={}", status);
+        // KisWebSocketClient가 수신해 백오프 재연결 + 재구독 수행
+        eventPublisher.publishEvent(new KisWebSocketDisconnectedEvent(String.valueOf(status)));
     }
 
     @Override
