@@ -1,0 +1,3 @@
+Constructor <io.antcamp.rankingservice.presentation.dto.MyCompetitionHistoryResponse.<init>(java.util.UUID, io.antcamp.rankingservice.domain.model.RankTier, java.time.LocalDateTime)> has parameter of type <io.antcamp.rankingservice.domain.model.RankTier> in (MyCompetitionHistoryResponse.java:0)
+Field <io.antcamp.rankingservice.presentation.dto.MyCompetitionHistoryResponse.rankTier> has type <io.antcamp.rankingservice.domain.model.RankTier> in (MyCompetitionHistoryResponse.java:0)
+Method <io.antcamp.rankingservice.presentation.dto.MyCompetitionHistoryResponse.rankTier()> has return type <io.antcamp.rankingservice.domain.model.RankTier> in (MyCompetitionHistoryResponse.java:0)

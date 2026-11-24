@@ -22,7 +22,14 @@ tests/
 - 호출 기준은 **게이트웨이** `http://localhost:8080`. 자격증명·변수는 루트 `http-client.env.json`(`local` 환경)을 따른다.
 - 시나리오 원본은 루트 `scenario.http` / `scenario_all.http` / `scenario_trading.http`.
 - `results/`는 매 실행마다 타임스탬프 디렉토리로 쌓인다 — **커밋하지 않는다**(`tests/.gitignore`).
-- 저장물에 JWT/토큰/`KIS_*`/`*_API_KEY`/비밀번호가 평문으로 남지 않도록 **마스킹**한다.
+- 저장물에 JWT/토큰/`KIS_*`/`*_API_KEY`/비밀번호가 평문으로 남지 않도록 **마스킹**한다. 저장 직후 아래 두 스크립트를 순서대로 실행하며, 검사가 실패한 실행은 실패로 처리한다.
+
+```bash
+scripts/mask-secrets.sh tests/results/<timestamp>       # 값을 *** 로 바꾼다 (키 이름과 구조는 남는다)
+scripts/check-no-secrets.sh tests/results/<timestamp>   # 남아 있으면 파일:줄 출력 + 종료 코드 1
+```
+
+잡는 패턴은 `scripts/secret-patterns.sh` 한 곳에 있다: JWT, `Authorization: Bearer`, 본문의 `accessToken`/`refreshToken`/`password`, 환경 변수 꼴(`KIS_*`, `*_API_KEY`, `*_SECRET`, `*_TOKEN`, `*_PASSWORD`).
 
 ## summary.md 형식
 

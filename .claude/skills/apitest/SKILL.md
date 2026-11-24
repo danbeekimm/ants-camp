@@ -59,6 +59,13 @@ mkdir -p "tests/results/$TS"
 | 02 | 대회 게시 | PATCH | /api/competitions/{id}/publish | 200 | 500 | ❌ |
 ```
 
+### 5-1. 마스킹과 검사 (결과 저장 직후, 생략하지 않는다)
+```bash
+scripts/mask-secrets.sh "tests/results/$TS"       # 토큰 · 비밀번호 · 키 값을 *** 로 바꾼다
+scripts/check-no-secrets.sh "tests/results/$TS"   # 남아 있으면 파일:줄 을 출력하고 종료 코드 1
+```
+검사가 실패하면 이 실행은 **실패**로 보고한다(시나리오가 모두 통과했더라도). 실패한 결과 폴더는 Slack 으로 보내지 않는다.
+
 ### 6. Slack 보고 (`--no-slack`가 아니면)
 ```bash
 scripts/notify-slack.sh --status <success|failure> \
@@ -68,7 +75,7 @@ scripts/notify-slack.sh --status <success|failure> \
 웹훅(`CLAUDE_DEV_SLACK_WEBHOOK_URL`) 미설정 시 스크립트가 경고만 내고 넘어간다(`docs/automation-workflow.md` C 참조).
 
 ## 보안 주의
-- 저장물에 JWT/토큰/`KIS_*`/`*_API_KEY`/비밀번호가 평문으로 남지 않도록 마스킹한다.
+- 저장물에 JWT/토큰/`KIS_*`/`*_API_KEY`/비밀번호가 평문으로 남지 않도록 마스킹한다. 손으로 하지 않고 `scripts/mask-secrets.sh` → `scripts/check-no-secrets.sh` 로 한다(5-1 단계).
 - `tests/results/`는 커밋 대상이 아니다(`.gitignore` 처리). 케이스 정의/시나리오만 버전관리한다.
 
 ## 참고

@@ -26,6 +26,9 @@ antcamp MSA의 코드 품질·아키텍처 점검 skill. 기준은 `docs/coding-
 - **동시성** (conventions §6): 경쟁 조건 락 누락, Redis를 source of truth로 사용, 수량/재고 감소에 Lua/분산락 부재.
 - **타입 안정성/공통 모듈** (conventions §4,9): VO/DTO/Event의 `record` 사용, primitive obsession, compact constructor 검증(내부 이벤트 record는 예외), `CommonResponse`/`ErrorCode`/`BusinessException`/`GlobalExceptionHandler`/`BaseEntity`+`@SuperBuilder` 재사용.
 
+### 2-1. 기계 검사 항목은 테스트 결과를 인용한다
+`docs/coding-conventions.md` 에서 `(ArchUnit 검사)` 가 붙은 규칙(레이어 의존 방향, domain 역참조, 엔티티 setter, 예외 처리기 위치)은 `./gradlew archTest` 결과를 인용하고 **다시 추측하지 않는다.** 테스트가 통과했으면 해당 규칙은 "기계 검사 통과" 로만 적는다. 아키텍처 테스트가 아직 없는 서비스의 코드라면 그 사실을 적고 AI 리뷰로 검토한다.
+
 ### 3. 보조 skill 활용
 - `--context` 모드(=diff 리뷰)일 때는 `/code-review`(정확성 버그)와 `/security-review`(보안·민감정보 로그, conventions §8)도 함께 돌려 결과를 통합한다.
 - 특정 파일 모드에서는 보안 민감 코드(인증/토큰/외부키/로그)가 포함된 경우에만 `/security-review`를 추가한다.

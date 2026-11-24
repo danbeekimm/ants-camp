@@ -201,6 +201,16 @@ spring:
 - **C. 완료 후 Slack 보고 — `scripts/notify-slack.sh`**
   주요 작업(특히 `/apitest`) 종료 시 결과를 Slack Incoming Webhook으로 보고한다. URL은 `.env`의 `CLAUDE_DEV_SLACK_WEBHOOK_URL`(미설정 시 보고는 건너뛰고 작업은 정상 진행). 외부 전송이므로 처음에는 사용자에게 확인을 받는다.
 
+### 가드레일 (막힌 명령을 우회하지 않는다)
+
+위험한 동작은 지침이 아니라 설정 · 훅 · 테스트로 막혀 있다. 무엇이 약속이고 무엇이 강제인지는 `docs/automation-workflow.md` 맨 위 표에 있다.
+
+- `.claude/settings.json` — 허용(빌드·테스트·git 조회) / 확인(Slack 전송, `docker compose`) / 차단(`.env`, `deploy.sh`, `gh_prod_secret.sh`).
+- `.claude/hooks/guard-bash.sh` — 셸 명령 실행 전 검사. `.env` 접근, 배포 스크립트, main 직접 푸시·강제 푸시, 볼륨 삭제를 막는다.
+- `./gradlew archTest` — 레이어 의존 방향 등 구조 규칙을 ArchUnit 으로 검사한다(CI 에서도 실행).
+- **명령이 차단되면 다른 방법으로 돌아가지 않는다.** 변수로 경로를 조합하거나 다른 도구로 같은 일을 시도하지 말고, 무엇이 왜 막혔는지 사용자에게 알리고 지시를 기다린다. 키 이름이 필요하면 `.env.example` 을 본다.
+- 아키텍처 테스트가 실패하면 규칙이나 얼려 둔 위반 목록(`archunit_store/`)을 고쳐서 통과시키지 않는다. 코드를 고치거나, 규칙이 틀렸다고 판단되면 사용자에게 알린다.
+
 ## 배포 (CD)
 
 > 2026-06 **AWS(ECR + 다중 EC2 + SSM) → OCI 단일 인스턴스**로 전환됨. 배경·구성은 `docs/DOWNSIZE-PLAN.md`, `docs/DEPLOY_PROGRESS.md` 참조.
@@ -217,7 +227,7 @@ spring:
 - 필요한 시크릿: `OCI_HOST` / `OCI_USER` / `OCI_SSH_KEY` / `OCI_PORT` / `OCI_APP_DIR` (GHCR 인증은 `GITHUB_TOKEN`).
 - 인스턴스 초기 셋업·리버스 프록시: `scripts/oci-setup.sh`, `scripts/nginx/antcamp.conf.example`.
 
-`ci.yml`은 **`dev` 대상 PR**에서 `./gradlew build -x test`만 수행한다(temurin 17, `--no-daemon`, 테스트 미실행).
+`ci.yml`은 **`dev` 대상 PR**에서 `./gradlew build -x test` 와 `./gradlew archTest`(아키텍처 규칙)를 수행한다(temurin 17, `--no-daemon`). 그 밖의 테스트는 인프라가 필요해 CI 에서 돌리지 않는다.
 
 ## Git 워크플로
 
@@ -234,3 +244,4 @@ spring:
 - API 시나리오 테스트: `scenario*.http` (IntelliJ HTTP Client, env는 `http-client.env.json`).
 - `docs/coding-conventions.md` — 코딩 컨벤션(상세). `docs/automation-workflow.md` — 자동 검토/테스트/Slack 보고 워크플로우(상세).
 - 스킬: `.claude/skills/revref`(코드 검토), `.claude/skills/apitest`(빌드·테스트·API 실행). 보고 스크립트: `scripts/notify-slack.sh`.
+- 가드레일: `.claude/settings.json`(권한), `.claude/hooks/guard-bash.sh`(실행 전 훅, 시험표는 `guard-bash.cases.md`), `scripts/mask-secrets.sh` · `scripts/check-no-secrets.sh`(결과 저장물 마스킹 검사).

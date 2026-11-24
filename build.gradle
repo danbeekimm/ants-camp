@@ -44,6 +44,31 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
     }
+
+    // 아키텍처 규칙 테스트 (docs/coding-conventions.md 의 기계 검사 항목)
+    // 기존 단위 테스트와 분리된 소스셋(src/archTest)에 둔다. 단위 테스트가 깨져 있어도 구조 규칙은 검사할 수 있다.
+    sourceSets {
+        archTest {
+            compileClasspath += sourceSets.main.output
+            runtimeClasspath += sourceSets.main.output
+        }
+    }
+    configurations {
+        archTestImplementation.extendsFrom implementation, testImplementation
+        archTestRuntimeOnly.extendsFrom runtimeOnly, testRuntimeOnly
+    }
+    dependencies {
+        archTestImplementation 'com.tngtech.archunit:archunit-junit5:1.5.1'
+    }
+
+    // 실행: ./gradlew archTest   (src/archTest 가 없는 모듈은 검사할 것이 없어 그냥 지나간다)
+    tasks.register('archTest', Test) {
+        group = 'verification'
+        description = '아키텍처 규칙(ArchUnit) 테스트만 실행한다.'
+        useJUnitPlatform()
+        testClassesDirs = sourceSets.archTest.output.classesDirs
+        classpath = sourceSets.archTest.runtimeClasspath
+    }
 }
 
 project(':common') {

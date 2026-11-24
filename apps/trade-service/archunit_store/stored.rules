@@ -1,0 +1,6 @@
+#
+#Tue Nov 24 13:19:13 KST 2026
+Layered\ architecture\ considering\ only\ dependencies\ in\ layers,\ consisting\ of\ (optional)\nlayer\ 'Presentation'\ ('..presentation..')\nlayer\ 'Application'\ ('..application..')\nlayer\ 'Domain'\ ('..domain..')\nlayer\ 'Infrastructure'\ ('..infrastructure..')\nwhere\ layer\ 'Presentation'\ may\ not\ be\ accessed\ by\ any\ layer\nwhere\ layer\ 'Application'\ may\ only\ be\ accessed\ by\ layers\ ['Presentation',\ 'Infrastructure']\nwhere\ layer\ 'Domain'\ may\ only\ be\ accessed\ by\ layers\ ['Application',\ 'Infrastructure']\nwhere\ layer\ 'Infrastructure'\ may\ not\ be\ accessed\ by\ any\ layer=8ef016d4-6641-4e7e-9273-ccf32961d036
+no\ classes\ should\ be\ annotated\ with\ @RestControllerAdvice\ or\ should\ be\ annotated\ with\ @ControllerAdvice=437051ea-38ac-4f84-a68c-bb78f2548283
+no\ methods\ that\ are\ declared\ in\ classes\ that\ are\ annotated\ with\ @Entity\ and\ are\ public\ should\ have\ name\ matching\ 'set[A-Z].*'=9c109913-ddff-43d0-8c2e-2943bc031b19
+no\ classes\ that\ reside\ in\ a\ package\ '..domain..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..',\ '..presentation..']=bbbc7554-1394-4c55-9029-b8b3047e0219
