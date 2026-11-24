@@ -25,3 +25,8 @@ jobs:
 
       - name: Gradle 빌드 (테스트 제외)
         run: ./gradlew build -x test --no-daemon
+
+      # 구조만 보고 판정되는 규칙(레이어 의존 방향 등)은 여기서 기계가 검사한다.
+      # 전체 test 는 인프라가 필요한 테스트가 섞여 있어 CI 에서 돌리지 않는다.
+      - name: 아키텍처 규칙 테스트 (ArchUnit)
+        run: ./gradlew archTest --no-daemon

@@ -5,13 +5,18 @@
 > **심각도 기준** (`.coderabbit.yaml`과 동일)
 > - **🔴 Request Changes (반드시 수정)** — 아키텍처 위반: DDD/레이어/트랜잭션/이벤트 경계 위반.
 > - **🟡 Comment (개선 권장)** — 성능, 코드 품질, 리팩토링.
+>
+> **검사 방식** — 규칙마다 누가 검사하는지 다르다.
+> - **`(ArchUnit 검사)`** 가 붙은 규칙은 코드 구조만 보고 판정할 수 있어 테스트가 검사한다(`./gradlew archTest`, CI 에서도 실행). 매번 같은 답이 나온다.
+> - 표시가 없는 규칙은 호출 흐름이나 의도를 읽어야 해서 AI 리뷰(`/revref`)가 검사한다.
+> - 최종 합격 판정은 사람이 한다.
 
 ---
 
 ## 1. Spring Boot & JPA 내부
 
 - **`@Transactional` 범위를 최소화한다.** 트랜잭션 안에서 외부 API(Feign/WebClient/KIS 등)를 호출하지 않는다 — DB 커넥션을 오래 쥐는 원인이 된다. 외부 호출은 트랜잭션 밖에서 수행하고, 결과만 짧은 트랜잭션으로 반영한다. 🔴
-- **JPA 엔티티에 `@Setter`/`@Data`를 붙이지 않는다.** 상태 변경은 비즈니스 의미가 담긴 메서드로 캡슐화한다(예: `order.confirm()`, `account.withdraw(amount)`). 🔴
+- **JPA 엔티티에 `@Setter`/`@Data`를 붙이지 않는다.** 상태 변경은 비즈니스 의미가 담긴 메서드로 캡슐화한다(예: `order.confirm()`, `account.withdraw(amount)`). 🔴 `(ArchUnit 검사)`
 - **N+1을 유발할 수 있는 매핑을 피한다.** 연관관계는 `FetchType.LAZY`를 기본으로 하고, 필요한 곳에서 fetch join / `@EntityGraph` / QueryDSL로 명시적으로 로딩한다. `FetchType.EAGER`를 새로 추가하지 않는다. 🟡
 
 ```java
@@ -39,7 +44,7 @@ public class OrderEntity extends BaseEntity {
 
 ## 2. 아키텍처 & DDD
 
-- **domain → infrastructure 역방향 참조 금지.** domain 레이어(엔티티/모델·repository 포트·도메인 예외)는 JPA·외부 API·스프링 인프라에 의존하지 않는 POJO여야 한다. 🔴
+- **domain → infrastructure 역방향 참조 금지.** domain 레이어(엔티티/모델·repository 포트·도메인 예외)는 JPA·외부 API·스프링 인프라에 의존하지 않는 POJO여야 한다. 🔴 `(ArchUnit 검사)`
 - **분산 환경 동시성(Race Condition)을 설계로 막는다.** 동시 수정이 가능한 로직(주문 수량 차감, 좌석/한도, 참가자 수 등)에는 적절한 락(Redis 분산락 등) 또는 원자적 연산을 둔다. 🔴
 
 ---
@@ -86,7 +91,7 @@ public record BuyStockRequest(String stockCode, long quantity) {
 
 ## 7. 레이어드 아키텍처
 
-- **presentation → domain 직접 접근 금지.** 컨트롤러는 application 레이어(유스케이스 서비스)만 호출한다. 🔴
+- **presentation → domain 직접 접근 금지.** 컨트롤러는 application 레이어(유스케이스 서비스)만 호출한다. 🔴 `(ArchUnit 검사)`
 - **application 레이어를 거치지 않은 비즈니스 로직 실행 금지.** 🔴
 - 포트는 안쪽(`application/port`, `domain/repository`)에 인터페이스로 정의하고, 구현 어댑터는 `infrastructure`에 둔다(루트 `CLAUDE.md`의 헥사고날 규약 참조).
 
@@ -104,7 +109,7 @@ public record BuyStockRequest(String stockCode, long quantity) {
 
 - **응답은 `CommonResponse<T>`로 감싼다.** `CommonResponse.ok(data)` / `ok(message, data)` / `created(message, data)` / `accepted(message, data)`로 `ResponseEntity`를 만든다(`status`, `code`, `message`, `data` 구조).
 - **비즈니스 오류는 `throw new BusinessException(ErrorCode.XXX)`.** 새 오류는 `common/exception/ErrorCode`에 도메인별 그룹으로 추가한다. 서비스별 예외(`SessionNotFoundException` 등)는 도메인 의미를 위해 둘 수 있으나, 최종적으로 `ErrorCode`에 매핑되어야 한다.
-- **예외 처리는 `GlobalExceptionHandler`(`@RestControllerAdvice`)에 위임한다.** 서비스마다 별도 핸들러를 만들지 않는다. 컨트롤러에서 try-catch로 응답을 직접 만들지 않는다.
+- **예외 처리는 `GlobalExceptionHandler`(`@RestControllerAdvice`)에 위임한다.** 서비스마다 별도 핸들러를 만들지 않는다 `(ArchUnit 검사)`. 컨트롤러에서 try-catch로 응답을 직접 만들지 않는다.
 - **엔티티는 `BaseEntity`를 상속하고 `@SuperBuilder`를 쓴다.** 생성/수정/삭제 감사 필드와 소프트 삭제(`softDelete(by)`, `isDeleted()`)를 제공한다. 물리 삭제 대신 소프트 삭제를 기본으로 한다.
 
 ```java
